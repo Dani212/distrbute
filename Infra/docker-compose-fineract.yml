@@ -1,0 +1,23 @@
+volumes:
+  distrbute-filesystem:
+    external: true
+
+networks:
+  distrbute-network:
+    external: true
+
+services:
+  fineract:
+    image: openjdk:19-jdk-slim
+    container_name: ${FINERACT_CONTAINER_NAME}
+    volumes:
+      - distrbute-filesystem:/data/fineract
+    working_dir: /data/fineract
+    ports:
+      - "127.0.0.1:${FINERACT_PORT}:8443"
+    env_file:
+      - ./.env
+    entrypoint: ["sh", "-c", "exec java -Xms256m -Xmx512m -XX:+UseSerialGC -XX:MaxMetaspaceSize=256m -XX:+ExitOnOutOfMemoryError -XshowSettings:vm -jar fineract.jar"]
+    networks:
+      - distrbute-network
+    restart: unless-stopped

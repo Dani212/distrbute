@@ -1,0 +1,17 @@
+volumes:
+  distrbute-filesystem:
+    external: true
+
+networks:
+  distrbute-network:
+    external: true
+
+services:
+  init-filesystem:
+    image: busybox
+    command: ["wget", "-O", "/data/fineract/fineract.jar", "https://github.com/Ksarfo69/App.Fineract/releases/download/v1.0.0/fineract-provider.jar"]
+    volumes:
+      - distrbute-filesystem:/data/fineract
+    restart: "no"
+    networks:
+      - distrbute-network
