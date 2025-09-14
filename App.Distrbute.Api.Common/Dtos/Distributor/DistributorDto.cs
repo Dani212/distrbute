@@ -4,7 +4,9 @@ namespace App.Distrbute.Api.Common.Dtos.Distributor;
 
 public class CreateDistributorDto
 {
-    [Required] public string Name { get; set; } = null!;
+    [Required] 
+    [RegularExpression(@"^[a-zA-Z\s]+$", ErrorMessage = "Name can only contain letters and spaces.")]
+    public string Name { get; set; } = null!;
     public DocumentFileDto? ProfilePicture { get; set; }
 }
 

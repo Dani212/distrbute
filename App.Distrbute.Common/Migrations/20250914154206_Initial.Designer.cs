@@ -4,6 +4,7 @@ using App.Distrbute.Common;
 using App.Distrbute.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ObjectStorage.Sdk.Dtos;
@@ -13,9 +14,11 @@ using ObjectStorage.Sdk.Dtos;
 namespace App.Distrbute.Common.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250914154206_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,10 +38,6 @@ namespace App.Distrbute.Common.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("EmailId")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -64,8 +63,6 @@ namespace App.Distrbute.Common.Migrations
                         .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("EmailId");
 
                     b.ToTable("Brands");
                 });
@@ -118,16 +115,8 @@ namespace App.Distrbute.Common.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<string>("BrandId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("EmailId")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -141,10 +130,6 @@ namespace App.Distrbute.Common.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BrandId");
-
-                    b.HasIndex("EmailId");
-
                     b.ToTable("BrandMembers");
                 });
 
@@ -155,10 +140,6 @@ namespace App.Distrbute.Common.Migrations
 
                     b.Property<string>("Attachment")
                         .HasColumnType("jsonb");
-
-                    b.Property<string>("BrandId")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<double>("Budget")
                         .HasColumnType("double precision");
@@ -203,8 +184,6 @@ namespace App.Distrbute.Common.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BrandId");
-
                     b.HasIndex("FundingTransactionId");
 
                     b.ToTable("Campaign");
@@ -223,9 +202,6 @@ namespace App.Distrbute.Common.Migrations
 
                     b.Property<double?>("AmountDueDistrbute")
                         .HasColumnType("double precision");
-
-                    b.Property<string>("BrandId")
-                        .HasColumnType("text");
 
                     b.Property<double?>("Charges")
                         .HasColumnType("double precision");
@@ -247,9 +223,6 @@ namespace App.Distrbute.Common.Migrations
 
                     b.Property<Depository>("Destination")
                         .HasColumnType("jsonb");
-
-                    b.Property<string>("DistributorId")
-                        .HasColumnType("text");
 
                     b.Property<string>("IntegrationChannel")
                         .IsRequired()
@@ -305,10 +278,6 @@ namespace App.Distrbute.Common.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BrandId");
-
-                    b.HasIndex("DistributorId");
-
                     b.ToTable("DistrbuteTransactions");
                 });
 
@@ -319,10 +288,6 @@ namespace App.Distrbute.Common.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("EmailId")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -347,8 +312,6 @@ namespace App.Distrbute.Common.Migrations
                         .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("EmailId");
 
                     b.ToTable("Distributors");
                 });
@@ -402,10 +365,6 @@ namespace App.Distrbute.Common.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("EmailId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -418,8 +377,6 @@ namespace App.Distrbute.Common.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DistributorId");
-
-                    b.HasIndex("EmailId");
 
                     b.ToTable("SuspenseWallets");
                 });
@@ -446,18 +403,8 @@ namespace App.Distrbute.Common.Migrations
                     b.Property<string>("AuthorizationCode")
                         .HasColumnType("text");
 
-                    b.Property<string>("BrandId")
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("DistributorId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("EmailId")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -486,12 +433,6 @@ namespace App.Distrbute.Common.Migrations
                         .HasColumnType("boolean");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("BrandId");
-
-                    b.HasIndex("DistributorId");
-
-                    b.HasIndex("EmailId");
 
                     b.ToTable("Wallets");
                 });
@@ -534,7 +475,7 @@ namespace App.Distrbute.Common.Migrations
                 {
                     b.HasOne("App.Distrbute.Common.Models.Email", "Email")
                         .WithMany()
-                        .HasForeignKey("EmailId")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -556,13 +497,13 @@ namespace App.Distrbute.Common.Migrations
                 {
                     b.HasOne("App.Distrbute.Common.Models.Brand", "Brand")
                         .WithMany()
-                        .HasForeignKey("BrandId")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("App.Distrbute.Common.Models.Email", "Email")
                         .WithMany()
-                        .HasForeignKey("EmailId")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -573,15 +514,15 @@ namespace App.Distrbute.Common.Migrations
 
             modelBuilder.Entity("App.Distrbute.Common.Models.Campaign", b =>
                 {
-                    b.HasOne("App.Distrbute.Common.Models.Brand", "Brand")
-                        .WithMany()
-                        .HasForeignKey("BrandId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("App.Distrbute.Common.Models.DistrbuteTransaction", "FundingTransaction")
                         .WithMany()
                         .HasForeignKey("FundingTransactionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("App.Distrbute.Common.Models.Brand", "Brand")
+                        .WithMany()
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -594,11 +535,15 @@ namespace App.Distrbute.Common.Migrations
                 {
                     b.HasOne("App.Distrbute.Common.Models.Brand", "Brand")
                         .WithMany()
-                        .HasForeignKey("BrandId");
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("App.Distrbute.Common.Models.Distributor", "Distributor")
                         .WithMany()
-                        .HasForeignKey("DistributorId");
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Brand");
 
@@ -609,7 +554,7 @@ namespace App.Distrbute.Common.Migrations
                 {
                     b.HasOne("App.Distrbute.Common.Models.Email", "Email")
                         .WithMany()
-                        .HasForeignKey("EmailId")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -626,7 +571,7 @@ namespace App.Distrbute.Common.Migrations
 
                     b.HasOne("App.Distrbute.Common.Models.Email", "Email")
                         .WithMany()
-                        .HasForeignKey("EmailId")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -639,15 +584,19 @@ namespace App.Distrbute.Common.Migrations
                 {
                     b.HasOne("App.Distrbute.Common.Models.Brand", "Brand")
                         .WithMany()
-                        .HasForeignKey("BrandId");
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("App.Distrbute.Common.Models.Distributor", "Distributor")
                         .WithMany()
-                        .HasForeignKey("DistributorId");
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("App.Distrbute.Common.Models.Email", "Email")
                         .WithMany()
-                        .HasForeignKey("EmailId")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

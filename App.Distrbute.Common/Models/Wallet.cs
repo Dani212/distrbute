@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using App.Distrbute.Common.Dtos;
 using Paystack.Sdk.Enums;
+using Persistence.Sdk.Models;
 using Redact.Sdk.Attributes;
 
 namespace App.Distrbute.Common.Models;
@@ -8,7 +9,10 @@ namespace App.Distrbute.Common.Models;
 [Redactable]
 public class Wallet : BaseWallet
 {
+    [ForeignKey]
     public Brand? Brand { get; set; }
+    
+    [ForeignKey]
     public Distributor? Distributor { get; set; }
 
     /// <summary>
