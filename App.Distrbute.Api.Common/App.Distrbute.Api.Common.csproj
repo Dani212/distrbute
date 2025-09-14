@@ -23,6 +23,7 @@
         <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0"/>
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.6"/>
         <PackageReference Include="OpenTelemetry.Api" Version="1.12.0"/>
+        <PackageReference Include="Paystack.Sdk" Version="1.0.1" />
         <PackageReference Include="SharpGrip.FluentValidation.AutoValidation.Mvc" Version="1.4.0"/>
         <PackageReference Include="SharpGrip.FluentValidation.AutoValidation.Shared" Version="1.4.0"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.5.2"/>

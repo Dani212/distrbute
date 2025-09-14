@@ -15,7 +15,7 @@ namespace App.Distrbute.Api.Common.Extensions;
 
 public static class JwtIdentityPrincipalExtensions
 {
-    public static AuthUser GetAccount(this ClaimsPrincipal principal)
+    public static Email GetAccount(this ClaimsPrincipal principal)
     {
         var claimsIdentity =
             principal.Identities.FirstOrDefault(i => i.AuthenticationType == CommonConstants.AuthScheme.BEARER);
@@ -23,7 +23,7 @@ public static class JwtIdentityPrincipalExtensions
 
         if (claim == null) throw new Unauthorized("Failed to identify authentication principal");
 
-        var authUser = JsonConvert.DeserializeObject<AuthUser>(claim.Value)!;
+        var authUser = JsonConvert.DeserializeObject<Email>(claim.Value)!;
 
         return authUser;
     }
