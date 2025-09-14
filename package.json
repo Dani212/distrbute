@@ -1,0 +1,25 @@
+{
+  "name": "distrbute-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "dev:brand": "turbo run dev --filter=brand",
+    "dev:distributor": "turbo run dev --filter=distributor",
+    "dev:marketing": "turbo run dev --filter=marketing",
+    "build:ui": "turbo run build --filter=@distrbute/ui",
+    "build:shared-models": "turbo run build --filter=@distrbute/shared-models"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.7",
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
