@@ -1,0 +1,66 @@
+volumes:
+  distrbute-filesystem:
+    external: true
+
+networks:
+  distrbute-network:
+    external: true
+
+services:
+  init-filesystem:
+    image: busybox
+    command: ["wget", "-O", "/data/fineract/fineract.jar", "https://github.com/Ksarfo69/App.Fineract/releases/download/v1.0.0/fineract-provider.jar"]
+    volumes:
+      - distrbute-filesystem:/data/fineract
+    restart: "no"
+    networks:
+      - distrbute-network
+
+  redis:
+    container_name: ${REDIS_CONTAINER_NAME}
+    image: redislabs/redismod
+    hostname: redis
+    ports:
+      - 127.0.0.1:${REDIS_PORT}:6379
+    networks:
+      - distrbute-network
+    restart: unless-stopped
+
+  db:
+    container_name: ${PG_CONTAINER_NAME}
+    image: postgres:16.1
+    volumes:
+      - ${PWD}/01-init.sh:/docker-entrypoint-initdb.d/01-init.sh:Z,ro
+      - distrbute-filesystem:/distrbute-filesystem
+    depends_on:
+      init-filesystem:
+        condition: service_completed_successfully
+    env_file:
+      - ./.env
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-U", "${POSTGRES_USER}" ]
+      timeout: 10s
+      retries: 10
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
+    networks:
+      - distrbute-network
+    restart: unless-stopped
+
+  fineract:
+    image: openjdk:19-jdk-slim
+    container_name: ${FINERACT_CONTAINER_NAME}
+    volumes:
+      - distrbute-filesystem:/data/fineract
+    working_dir: /data/fineract
+    ports:
+      - "127.0.0.1:${FINERACT_PORT}:8443"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    entrypoint: ["sh", "-c", "exec java -Xms256m -Xmx512m -XX:+UseSerialGC -XX:MaxMetaspaceSize=256m -XX:+ExitOnOutOfMemoryError -XshowSettings:vm -jar fineract.jar"]
+    networks:
+      - distrbute-network
+    restart: unless-stopped
