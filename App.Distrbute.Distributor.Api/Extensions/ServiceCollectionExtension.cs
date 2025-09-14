@@ -19,6 +19,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using ObjectStorage.Sdk.Extensions;
+using Paystack.Sdk.Extensions;
+using Pipeline.Sdk.Extensions;
 using Redis.Sdk.Extensions;
 
 namespace App.Distrbute.Distributor.Api.Extensions;
@@ -106,6 +108,7 @@ public static class ServiceCollectionExtension
             configuration.GetRequiredSection(nameof(MailTemplateConfig)).Bind(c));
         
         services.AddLoggedScopedService<IAuthenticationService, AuthenticationService>();
+        services.AddLoggedScopedService<IPipelineProvider, PipelineProvider>();
 
         return services;
     }
@@ -119,7 +122,7 @@ public static class ServiceCollectionExtension
         services.AddLedgerSdk(configuration);
 
         // Add Paystack Sdk
-        // services.AddPaystackSdk(configuration);
+        services.AddPaystackSdk(configuration);
 
         // Add Redis
         services.AddRedisSdk(configuration);
@@ -135,7 +138,7 @@ public static class ServiceCollectionExtension
         services.AddS3ObjectStorage(configuration);
 
         // Add task pipeline
-        // services.AddPipelineSdk(configuration);
+        services.AddPipelineSdk(configuration);
 
         // Add messaging
         services.AddGmailSmtpMessaging(configuration, MailTemplate.GetTemplate);

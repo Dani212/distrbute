@@ -1,4 +1,4 @@
-namespace App.Distrbute.Common.Models.Distributor;
+namespace App.Distrbute.Common.Models;
 
 public class Distributor : BaseBrandDistributor
 {

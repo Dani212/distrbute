@@ -7,8 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Paystack.Sdk" Version="1.0.1" />
       <PackageReference Include="Persistence.Sdk" Version="1.0.3" />
       <PackageReference Include="ObjectStorage.Sdk" Version="1.0.0" />
+      <PackageReference Include="Pipeline.Sdk" Version="1.0.0" />
+      <PackageReference Include="Socials.Sdk" Version="1.0.1" />
     </ItemGroup>
 
 </Project>
