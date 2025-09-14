@@ -41,6 +41,8 @@
 
     <ItemGroup>
         <PackageReference Include="Actors.Sdk" Version="1.0.0"/>
+        <PackageReference Include="Ledgr.Sdk" Version="1.0.2" />
+        <PackageReference Include="Messaging.Sdk" Version="1.0.0"/>
         <PackageReference Include="Utility.Sdk" Version="1.0.1"/>
         <PackageReference Include="Redis.Sdk" Version="1.0.0"/>
     </ItemGroup>

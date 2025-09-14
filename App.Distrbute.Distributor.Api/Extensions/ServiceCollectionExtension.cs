@@ -8,12 +8,17 @@ using Akka.Hosting;
 using App.Distrbute.Api.Common.Authentication;
 using App.Distrbute.Api.Common.Extensions;
 using App.Distrbute.Api.Common.Options;
+using App.Distrbute.Api.Common.Services.Interfaces;
+using App.Distrbute.Api.Common.Services.Providers;
 using App.Distrbute.Common;
+using Ledgr.Sdk.Extensions;
 using Logged.Sdk.Extensions;
+using Messaging.Sdk.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using ObjectStorage.Sdk.Extensions;
 using Redis.Sdk.Extensions;
 
 namespace App.Distrbute.Distributor.Api.Extensions;
@@ -94,6 +99,13 @@ public static class ServiceCollectionExtension
         // Configurations
         // this is important, dont remove no matter what
         services.Configure<BearerTokenConfig>(c => configuration.GetRequiredSection(nameof(BearerTokenConfig)).Bind(c));
+        
+        services.Configure<SavingsProductConfig>(c =>
+            configuration.GetRequiredSection(nameof(SavingsProductConfig)).Bind(c));
+        services.Configure<MailTemplateConfig>(c =>
+            configuration.GetRequiredSection(nameof(MailTemplateConfig)).Bind(c));
+        
+        services.AddLoggedScopedService<IAuthenticationService, AuthenticationService>();
 
         return services;
     }
@@ -102,9 +114,31 @@ public static class ServiceCollectionExtension
     {
         // Add Logger
         services.AddLoggedSdk(configuration);
-        
+
+        // Add ledger
+        services.AddLedgerSdk(configuration);
+
+        // Add Paystack Sdk
+        // services.AddPaystackSdk(configuration);
+
         // Add Redis
         services.AddRedisSdk(configuration);
+
+        // Add ElasticSearch
+        // services.AddElasticSearchSdk(configuration);
+
+        // Add scheduelr
+        // services.AddSchedulerSdk(configuration);
+
+        // Add object storage sdk
+        // services.AddLocalObjectStorageSdk(configuration);
+        services.AddS3ObjectStorage(configuration);
+
+        // Add task pipeline
+        // services.AddPipelineSdk(configuration);
+
+        // Add messaging
+        services.AddGmailSmtpMessaging(configuration, MailTemplate.GetTemplate);
 
         return services;
     }
