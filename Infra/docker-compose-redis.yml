@@ -1,0 +1,18 @@
+volumes:
+  distrbute-filesystem:
+    external: true
+
+networks:
+  distrbute-network:
+    external: true
+
+services:
+  redis:
+    container_name: ${REDIS_CONTAINER_NAME}
+    image: redislabs/redismod
+    hostname: redis
+    ports:
+      - 127.0.0.1:${REDIS_PORT}:6379
+    networks:
+      - distrbute-network
+    restart: unless-stopped
