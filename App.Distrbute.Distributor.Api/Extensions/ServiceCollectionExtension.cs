@@ -11,6 +11,8 @@ using App.Distrbute.Api.Common.Options;
 using App.Distrbute.Api.Common.Services.Interfaces;
 using App.Distrbute.Api.Common.Services.Providers;
 using App.Distrbute.Common;
+using App.Distrbute.Distributor.Api.Services.Interfaces;
+using App.Distrbute.Distributor.Api.Services.Providers;
 using Ledgr.Sdk.Extensions;
 using Logged.Sdk.Extensions;
 using Messaging.Sdk.Extensions;
@@ -108,7 +110,10 @@ public static class ServiceCollectionExtension
             configuration.GetRequiredSection(nameof(MailTemplateConfig)).Bind(c));
         
         services.AddLoggedScopedService<IAuthenticationService, AuthenticationService>();
+        services.AddLoggedScopedService<IDepositToWalletService, DepositToWalletService>();
+        services.AddLoggedScopedService<IDistributorService, DistributorService>();
         services.AddLoggedScopedService<IPipelineProvider, PipelineProvider>();
+        services.AddLoggedScopedService<IWalletService, WalletService>();
 
         return services;
     }
@@ -166,6 +171,24 @@ public static class ServiceCollectionExtension
 
                         return Directive.Stop;
                     });
+
+                // var processWalletDepositActorProps = resolver
+                //     .Props<ProcessPayoutActor>()
+                //     .WithSupervisorStrategy(defaultStrategy);
+                //
+                // var processWalletDepositActor =
+                //     system.ActorOf(processWalletDepositActorProps, nameof(ProcessPayoutActor));
+                // registry.Register<ProcessPayoutActor>(processWalletDepositActor);
+                //
+                // var processPostAutoApprovalActorProps = resolver
+                //     .Props<ProcessPostAutoApprovalActor>()
+                //     .WithSupervisorStrategy(defaultStrategy);
+                //
+                // var processPostAutoApprovalActor =
+                //     system.ActorOf(processPostAutoApprovalActorProps, nameof(ProcessPostAutoApprovalActor));
+                // registry.Register<ProcessPostAutoApprovalActor>(processPostAutoApprovalActor);
+
+                system.RegisterPipelineSdkActors(registry, resolver);
             });
         });
 

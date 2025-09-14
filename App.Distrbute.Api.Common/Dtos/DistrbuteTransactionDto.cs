@@ -6,7 +6,7 @@ namespace App.Distrbute.Api.Common.Dtos;
 public class DistrbuteTransactionDto
 {
     public string Id { get; set; } = null!;
-    public string AccountName { get; set; } = null!;
+    public string? AccountName { get; set; }
     public string? BrandId { get; set; }
     public string? DistributorId { get; set; }
     public string? BrandName { get; set; }

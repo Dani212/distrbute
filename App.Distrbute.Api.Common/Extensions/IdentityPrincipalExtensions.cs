@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using App.Distrbute.Api.Common.Dtos;
 using App.Distrbute.Common;
 using App.Distrbute.Common.Exceptions;
 using App.Distrbute.Common.Models;
@@ -67,7 +66,7 @@ public static class JwtIdentityPrincipalExtensions
 
             // if we're here, the details did not exist in cache
             var dbUser = await dbRepository
-                .GetAsync<Email>(e => !e.IsDeleted && e.Address.Equals(id))
+                .GetAsync<Email>(q => q.Where(e => !e.IsDeleted && e.Address.Equals(id)))
                 .IgnoreAndDefault<NotFound, Email>();
 
             if (dbUser == null)
@@ -79,7 +78,7 @@ public static class JwtIdentityPrincipalExtensions
             // cache retrieved user
             if (redisRepository != null)
                 await redisRepository
-                    .SetAsync(cacheKey, dbUser)
+                    .SetAsync(cacheKey, dbUser, TimeSpan.FromDays(1))
                     .Ignore<Exception>();
 
             identity = GetIdentityFrom(dbUser);

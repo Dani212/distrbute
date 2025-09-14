@@ -8,11 +8,46 @@ using ObjectStorage.Sdk.Dtos;
 namespace App.Distrbute.Common.Migrations
 {
     /// <inheritdoc />
-    public partial class add_more_models : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Emails",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Address = table.Column<string>(type: "text", nullable: false),
+                    LedgerClientId = table.Column<int>(type: "integer", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Emails", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Outbox",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    AggregateType = table.Column<string>(type: "text", nullable: false),
+                    AggregateId = table.Column<string>(type: "text", nullable: false),
+                    Type = table.Column<string>(type: "text", nullable: false),
+                    Payload = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Outbox", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Brands",
                 columns: table => new
@@ -41,30 +76,25 @@ namespace App.Distrbute.Common.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "SuspenseWallets",
+                name: "Distributors",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
-                    DistributorId = table.Column<string>(type: "text", nullable: false),
+                    OpenToCollaboration = table.Column<bool>(type: "boolean", nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    RelevanceScore = table.Column<int>(type: "integer", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
                     EmailId = table.Column<string>(type: "text", nullable: false),
-                    ProductId = table.Column<int>(type: "integer", nullable: false),
-                    AccountId = table.Column<int>(type: "integer", nullable: false),
-                    AccountName = table.Column<string>(type: "text", nullable: false)
+                    ProfilePicture = table.Column<DocumentFile>(type: "jsonb", nullable: true),
+                    Location = table.Column<Location>(type: "jsonb", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_SuspenseWallets", x => x.Id);
+                    table.PrimaryKey("PK_Distributors", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_SuspenseWallets_Distributors_DistributorId",
-                        column: x => x.DistributorId,
-                        principalTable: "Distributors",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_SuspenseWallets_Emails_EmailId",
+                        name: "FK_Distributors_Emails_EmailId",
                         column: x => x.EmailId,
                         principalTable: "Emails",
                         principalColumn: "Id",
@@ -131,9 +161,9 @@ namespace App.Distrbute.Common.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
-                    SavingsClientId = table.Column<int>(type: "integer", nullable: true),
-                    SavingsProductId = table.Column<int>(type: "integer", nullable: true),
-                    SavingsAccountId = table.Column<int>(type: "integer", nullable: true),
+                    LedgerClientId = table.Column<int>(type: "integer", nullable: true),
+                    LedgerProductId = table.Column<int>(type: "integer", nullable: true),
+                    LedgerAccountId = table.Column<int>(type: "integer", nullable: true),
                     BrandId = table.Column<string>(type: "text", nullable: true),
                     DistributorId = table.Column<string>(type: "text", nullable: true),
                     LedgerActionId = table.Column<int>(type: "integer", nullable: true),
@@ -172,6 +202,37 @@ namespace App.Distrbute.Common.Migrations
                         column: x => x.DistributorId,
                         principalTable: "Distributors",
                         principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SuspenseWallets",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    DistributorId = table.Column<string>(type: "text", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    EmailId = table.Column<string>(type: "text", nullable: false),
+                    ProductId = table.Column<int>(type: "integer", nullable: false),
+                    AccountId = table.Column<int>(type: "integer", nullable: false),
+                    AccountName = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SuspenseWallets", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SuspenseWallets_Distributors_DistributorId",
+                        column: x => x.DistributorId,
+                        principalTable: "Distributors",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_SuspenseWallets_Emails_EmailId",
+                        column: x => x.EmailId,
+                        principalTable: "Emails",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -296,6 +357,11 @@ namespace App.Distrbute.Common.Migrations
                 column: "DistributorId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Distributors_EmailId",
+                table: "Distributors",
+                column: "EmailId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SuspenseWallets_DistributorId",
                 table: "SuspenseWallets",
                 column: "DistributorId");
@@ -334,6 +400,9 @@ namespace App.Distrbute.Common.Migrations
                 name: "Campaign");
 
             migrationBuilder.DropTable(
+                name: "Outbox");
+
+            migrationBuilder.DropTable(
                 name: "SuspenseWallets");
 
             migrationBuilder.DropTable(
@@ -344,6 +413,12 @@ namespace App.Distrbute.Common.Migrations
 
             migrationBuilder.DropTable(
                 name: "Brands");
+
+            migrationBuilder.DropTable(
+                name: "Distributors");
+
+            migrationBuilder.DropTable(
+                name: "Emails");
         }
     }
 }

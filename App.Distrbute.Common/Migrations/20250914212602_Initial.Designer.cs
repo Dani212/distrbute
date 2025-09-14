@@ -14,8 +14,8 @@ using ObjectStorage.Sdk.Dtos;
 namespace App.Distrbute.Common.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250914121008_add_more_models")]
-    partial class add_more_models
+    [Migration("20250914212602_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -261,7 +261,16 @@ namespace App.Distrbute.Common.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<int?>("LedgerAccountId")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("LedgerActionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("LedgerClientId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("LedgerProductId")
                         .HasColumnType("integer");
 
                     b.Property<string>("PaymentProcessor")
@@ -272,15 +281,6 @@ namespace App.Distrbute.Common.Migrations
 
                     b.Property<string>("PaymentProcessorDescription")
                         .HasColumnType("text");
-
-                    b.Property<int?>("SavingsAccountId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("SavingsClientId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("SavingsProductId")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("SettledDate")
                         .HasColumnType("timestamp without time zone");

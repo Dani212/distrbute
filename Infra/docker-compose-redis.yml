@@ -16,3 +16,13 @@ services:
     networks:
       - distrbute-network
     restart: unless-stopped
+    
+  redisinsight:
+    container_name: redis-insight
+    hostname: redis-insight
+    image: redislabs/redisinsight:latest
+    # restart: always
+    ports:
+      - '127.0.0.1:8001:8001'
+    volumes:
+      - ./Users/ajeetraina/data/redisinsight:/db 

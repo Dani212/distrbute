@@ -8,11 +8,14 @@ namespace App.Distrbute.Common.Models;
 
 public class DistrbuteTransaction : BaseModel
 {
-    public int? SavingsClientId { get; set; }
-    public int? SavingsProductId { get; set; }
-    public int? SavingsAccountId { get; set; }
+    public int? LedgerClientId { get; set; }
+    public int? LedgerProductId { get; set; }
+    public int? LedgerAccountId { get; set; }
     
+    [Persistence.Sdk.Models.ForeignKey]
     public Brand? Brand { get; set; }
+    
+    [Persistence.Sdk.Models.ForeignKey]
     public Distributor? Distributor { get; set; }
     
     public int? LedgerActionId { get; set; }

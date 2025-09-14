@@ -6,6 +6,7 @@ namespace App.Distrbute.Common.Models;
 
 public class BaseWallet : BaseModel
 {
+    [ForeignKey]
     [Required] public Email Email { get; set; } = null!;
 
     /// <summary>
