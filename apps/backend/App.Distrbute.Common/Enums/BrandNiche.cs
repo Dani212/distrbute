@@ -5,7 +5,7 @@ using Newtonsoft.Json.Converters;
 namespace App.Distrbute.Common.Enums;
 
 [JsonConverter(typeof(StringEnumConverter))]
-public enum Niche
+public enum BrandNiche
 {
     Default = 0,
 

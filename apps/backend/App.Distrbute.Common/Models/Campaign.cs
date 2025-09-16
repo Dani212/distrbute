@@ -12,7 +12,7 @@ public class Campaign : BrandResource
     
     [Required]
     [Column(TypeName = "jsonb")]
-    public List<Niche> TargetedNiches { get; set; } = [];
+    public List<DistributorNiche> TargetedNiches { get; set; } = [];
 
     [Required]
     [Column(TypeName = "jsonb")]
