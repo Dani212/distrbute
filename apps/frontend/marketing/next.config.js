@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@distrbute/ui', '@distrbute/shared-models'],
+  transpilePackages: ['@distrbute/next-shared'],
   experimental: {
     turbo: {
       rules: {
