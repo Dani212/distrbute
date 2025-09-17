@@ -5,7 +5,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@distrbute/ui";
+} from "@distrbute/next-shared";
 
 export default function MarketingHome() {
   return (

@@ -380,7 +380,6 @@ src/**/Nuget.template.config
 **/downloads/
 **/eggs/
 **/.eggs/
-**/lib/
 **/lib64/
 **/parts/
 **/sdist/
@@ -405,3 +404,5 @@ LogFiles
 logs
 
 
+.cursorrules
+.cursor/
