@@ -6,6 +6,7 @@ using App.Distrbute.Api.Common.Services.Interfaces;
 using App.Distrbute.Common;
 using App.Distrbute.Common.Exceptions;
 using App.Distrbute.Common.Models;
+using DataProtection.Sdk.Core;
 using Ledgr.Sdk.Dtos;
 using Ledgr.Sdk.Dtos.Client.Create;
 using Ledgr.Sdk.Exceptions;
@@ -32,6 +33,7 @@ public class AuthenticationService : IAuthenticationService
     private readonly IRedisRepository _redisRepository;
     private readonly ISavingsClientSdk _savingsClientSdk;
     private readonly MailTemplateConfig  _mailTemplateConfig;
+    private readonly IDataProtectionService _dataProtectionService;
 
     public AuthenticationService(
         IOptions<MailTemplateConfig> mailTemplateConfig,
@@ -39,7 +41,8 @@ public class AuthenticationService : IAuthenticationService
         BearerAuthHandler bearerAuthHandler,
         IRedisRepository redisRepository,
         IDbRepository dbRepository,
-        ISavingsClientSdk savingsClientSdk)
+        ISavingsClientSdk savingsClientSdk,
+        IDataProtectionService dataProtectionService)
     {
         _mailTemplateConfig = mailTemplateConfig.Value;
         _emailClient = emailClient;
@@ -47,6 +50,7 @@ public class AuthenticationService : IAuthenticationService
         _redisRepository = redisRepository;
         _dbRepository = dbRepository;
         _savingsClientSdk = savingsClientSdk;
+        _dataProtectionService = dataProtectionService;
     }
 
     public async Task<IApiResponse<GeneratedOtp>> SendOtpAsync(LoginRequest request)
@@ -92,7 +96,8 @@ public class AuthenticationService : IAuthenticationService
         otpCache.Email = generatedOtp.Email;
         otpCache.OtpPrefix = generatedOtp.OtpPrefix;
         otpCache.Name = Core.ResolveValue(existingUser?.Name, request.Name ?? string.Empty);
-        otpCache.OtpCode = otpCode;
+        var hashedOtpCode = _dataProtectionService.Hash(otpCode);
+        otpCache.OtpCode = hashedOtpCode;
         otpCache.ExistingUser = existingUser != null;
 
         // cache in Redis
@@ -139,7 +144,7 @@ public class AuthenticationService : IAuthenticationService
                     ("Invalid OTP code.");
 
         // Verify OTP
-        await cachedOtp.IsValid(otp)
+        await cachedOtp.IsValid(otp, _dataProtectionService)
             .ThrowIfFalse<Unauthorized>("Invalid OTP code.");
 
         // Get or create new user

@@ -19,14 +19,32 @@ public class StaticDataController : CustomControllerBase
     [SwaggerOperation(
         Summary = "Get all instances of existing resource that matches filter"
     )]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IApiResponse<List<Niche>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IApiResponse<List<BrandNiche>>))]
     public async Task<IActionResult> AllNiches()
     {
         User.GetAccount(); // ensure authenticated 
         
-        var response = Enum.GetValues(typeof(Niche))
-            .Cast<Niche>()
-            .Where(t => t != Niche.Default)
+        var response = Enum.GetValues(typeof(BrandNiche))
+            .Cast<BrandNiche>()
+            .Where(t => t != BrandNiche.Default)
+            .ToList().ToOkApiResponse();
+
+        await Task.CompletedTask;
+        return ToActionResult(response);
+    }
+    
+    [HttpGet("distributor-niches")]
+    [SwaggerOperation(
+        Summary = "Get all instances of existing resource that matches filter"
+    )]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IApiResponse<List<BrandNiche>>))]
+    public async Task<IActionResult> AllDistributorNiches()
+    {
+        User.GetAccount(); // ensure authenticated 
+        
+        var response = Enum.GetValues(typeof(DistributorNiche))
+            .Cast<DistributorNiche>()
+            .Where(t => t != DistributorNiche.Default)
             .ToList().ToOkApiResponse();
 
         await Task.CompletedTask;

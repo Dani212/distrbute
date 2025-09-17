@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using App.Distrbute.Common.Enums;
 using App.Distrbute.Common.Models;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -10,7 +11,7 @@ using Utility.Sdk.Extensions;
 
 namespace App.Distrbute.Common;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext : DbContext, IDataProtectionKeyContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -18,6 +19,9 @@ public class ApplicationDbContext : DbContext
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
     }
+    
+    // Data Protection
+    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
     // always append s else upserts will break
     public DbSet<Email> Emails { get; set; }
@@ -92,8 +96,8 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Campaign>()
             .Property(e => e.TargetedNiches)
-            .HasConversion(GetValueConverter<Campaign, List<Niche>>(d => d.TargetedNiches))
-            .Metadata.SetValueComparer(GetValueComparer<Campaign, List<Niche>>(d => d.TargetedNiches));
+            .HasConversion(GetValueConverter<Campaign, List<DistributorNiche>>(d => d.TargetedNiches))
+            .Metadata.SetValueComparer(GetValueComparer<Campaign, List<DistributorNiche>>(d => d.TargetedNiches));
 
         modelBuilder.Entity<Campaign>()
             .Property(e => e.TargetedPlatforms)
@@ -152,8 +156,8 @@ public class ApplicationDbContext : DbContext
         // brand
         modelBuilder.Entity<Brand>()
             .Property(e => e.Niches)
-            .HasConversion(GetValueConverter<Brand, List<Niche>>(d => d.Niches))
-            .Metadata.SetValueComparer(GetValueComparer<Brand, List<Niche>>(d => d.Niches));
+            .HasConversion(GetValueConverter<Brand, List<BrandNiche>>(d => d.Niches))
+            .Metadata.SetValueComparer(GetValueComparer<Brand, List<BrandNiche>>(d => d.Niches));
 
         // Brand member
         modelBuilder.Entity<BrandMember>()

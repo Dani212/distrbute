@@ -13,6 +13,7 @@ using App.Distrbute.Api.Common.Services.Providers;
 using App.Distrbute.Common;
 using App.Distrbute.Distributor.Api.Services.Interfaces;
 using App.Distrbute.Distributor.Api.Services.Providers;
+using DataProtection.Sdk.Extensions;
 using Ledgr.Sdk.Extensions;
 using Logged.Sdk.Extensions;
 using Messaging.Sdk.Extensions;
@@ -24,6 +25,9 @@ using ObjectStorage.Sdk.Extensions;
 using Paystack.Sdk.Extensions;
 using Pipeline.Sdk.Extensions;
 using Redis.Sdk.Extensions;
+using Socials.Sdk;
+using Socials.Sdk.Extensions;
+using Socials.Sdk.Services.Interfaces;
 
 namespace App.Distrbute.Distributor.Api.Extensions;
 
@@ -89,7 +93,13 @@ public static class ServiceCollectionExtension
                     },
                     OnTokenValidated = JwtIdentityPrincipalExtensions.AuthenticateJwtUserIdentity()
                 };
-            });
+            })
+            .AddCookie(OAuthConstants.Providers.Cookie)
+            .AddTwitterOAuth(services, configuration) // twitter
+            .AddTiktokOAuth(services, configuration) // tiktok
+            .AddSnapchatOAuth(services, configuration) // snapchat
+            .AddInstagramOAuth(services, configuration) // instagram
+            ;
 
 
         return services;
@@ -113,6 +123,8 @@ public static class ServiceCollectionExtension
         services.AddLoggedScopedService<IDepositToWalletService, DepositToWalletService>();
         services.AddLoggedScopedService<IDistributorService, DistributorService>();
         services.AddLoggedScopedService<IPipelineProvider, PipelineProvider>();
+        services.AddLoggedScopedService<IOauthAccountHandler, SocialAccountService>();
+        services.AddLoggedScopedService<ISocialAccountService, SocialAccountService>();
         services.AddLoggedScopedService<IWalletService, WalletService>();
 
         return services;
@@ -147,6 +159,9 @@ public static class ServiceCollectionExtension
 
         // Add messaging
         services.AddGmailSmtpMessaging(configuration, MailTemplate.GetTemplate);
+        
+        // Add Data Protection
+        services.AddDataProtectionSdk<ApplicationDbContext>(configuration);
 
         return services;
     }
