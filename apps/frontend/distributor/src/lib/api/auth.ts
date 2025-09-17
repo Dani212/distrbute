@@ -37,11 +37,8 @@ export interface VerifyOtpApiResponse {
   code: number;
   data: {
     token?: string;
-    user?: {
-      id: string;
-      email: string;
-      verified: boolean;
-    };
+    expirationMillis: number;
+    email: string;
   };
   errors: string | null;
 }

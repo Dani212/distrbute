@@ -17,6 +17,7 @@ import {
 import { AuthApi } from "@/lib/api/auth";
 import { STORAGE_KEYS, type OtpData } from "@/lib/constants/storage";
 import { ROUTES } from "@/lib/constants/routes";
+import { extractErrorMessage } from "@distrbute/next-shared";
 import { toast } from "sonner";
 
 export default function AuthPage() {
@@ -43,7 +44,7 @@ export default function AuthPage() {
       })
       .catch((error) => {
         console.error("Login error:", error);
-        toast.error("Failed to send OTP");
+        toast.error(extractErrorMessage(error));
       })
       .finally(() => {
         setIsLoading(false);
@@ -69,7 +70,7 @@ export default function AuthPage() {
       })
       .catch((error) => {
         console.error("Signup error:", error);
-        toast.error("Failed to send OTP");
+        toast.error(extractErrorMessage(error));
       })
       .finally(() => {
         setIsLoading(false);
