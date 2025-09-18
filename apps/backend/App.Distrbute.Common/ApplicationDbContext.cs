@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using App.Distrbute.Common.Enums;
 using App.Distrbute.Common.Models;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +6,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Newtonsoft.Json;
 using Persistence.Sdk.Models;
+using Socials.Sdk.Enums;
 using Utility.Sdk.Extensions;
 
 namespace App.Distrbute.Common;
@@ -24,63 +24,57 @@ public class ApplicationDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
     // always append s else upserts will break
-    public DbSet<Email> Emails { get; set; }
     public DbSet<Brand> Brands { get; set; }
-    public DbSet<BrandMember> BrandMembers { get; set; }
+    public DbSet<BrandDistributorNicheCorrelation> BrandDistributorNicheCorrelations { get; set; }
     public DbSet<BrandInvite> BrandInvites { get; set; }
-    public DbSet<Distributor> Distributors { get; set; }
-    // public DbSet<SocialAccount> SocialAccounts { get; set; }
-    // public DbSet<PostValuation> PostValuations { get; set; }
-    // public DbSet<Campaign> Campaigns { get; set; }
-    // public DbSet<Post> Ads { get; set; }
-    public DbSet<Outbox> Outboxes { get; set; }
-    public DbSet<Wallet> Wallets { get; set; }
-    public DbSet<SuspenseWallet> SuspenseWallets { get; set; }
+    public DbSet<BrandMember> BrandMembers { get; set; }
+    public DbSet<BrandNiche> BrandNiches { get; set; }
+    public DbSet<BrandSocialAccount> BrandSocialAccounts { get; set; }
+    public DbSet<Campaign> Campaigns { get; set; }
+    public DbSet<CampaignInvite> CampaignInvites { get; set; }
     public DbSet<DistrbuteTransaction> DistrbuteTransactions { get; set; }
+    public DbSet<Distributor> Distributors { get; set; }
+    public DbSet<DistributorNiche> DistributorNiches { get; set; }
+    public DbSet<DistributorSocialAccount> DistributorSocialAccounts { get; set; }
+    public DbSet<Email> Emails { get; set; }
+    public DbSet<Post> Posts { get; set; }
+    public DbSet<PostMetric> PostMetrics { get; set; }
+    public DbSet<SuspenseWallet> SuspenseWallets { get; set; }
+    public DbSet<Wallet> Wallets { get; set; }
+    
+    // From persistence sdk
+    public DbSet<Outbox> Outboxes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // // indexes
-        // modelBuilder.Entity<SocialAccount>()
-        //     .HasIndex(s => s.PaidViews);
-        // modelBuilder.Entity<SocialAccount>()
-        //     .HasIndex(s => s.Platform);
+        // Brand member
+        modelBuilder.Entity<BrandMember>()
+            .Property(e => e.Role)
+            .HasConversion<string>();
+        
+        // BrandNiche
+        modelBuilder.Entity<BrandNiche>()
+            .HasIndex(e => e.Name)
+            .IsUnique();
 
-        // constraints
-        // compound unique index
-        // modelBuilder.Entity<Wallet>()
-        //     // same wallet can belong to a distributor or a brand, but a distributor or brand cannot have same wallet twice
-        //     .HasIndex(w => new { w.Email, w.Brand.Id, w.Distributor, w.AccountNumber, w.Provider, w.Type })
-        //     .IsUnique();
-
-        // // POST VALUATION
-        // modelBuilder.Entity<PostValuation>()
-        //     // same wallet can belong to a distributor or a brand, but a distributor or brand cannot have same wallet twice
-        //     .HasIndex(w => new { w.ExternalPostId })
-        //     .IsUnique();
-        //
-        // modelBuilder.Entity<PostValuation>()
-        //     .Property(e => e.ContentType)
-        //     .HasConversion<string>();
-
-        // transaction
-        modelBuilder.Entity<DistrbuteTransaction>()
-            .Property(e => e.PaymentProcessor)
+        // Brand invite
+        modelBuilder.Entity<BrandInvite>()
+            .Property(e => e.Role)
             .HasConversion<string>();
 
-        modelBuilder.Entity<DistrbuteTransaction>()
-            .Property(e => e.TransactionStatus)
+        modelBuilder.Entity<BrandInvite>()
+            .Property(e => e.Status)
             .HasConversion<string>();
-
-        modelBuilder.Entity<DistrbuteTransaction>()
-            .Property(e => e.TransactionType)
+        
+        // Brand Social Account
+        modelBuilder.Entity<BrandSocialAccount>()
+            .Property(e => e.Platform)
             .HasConversion<string>();
-
-        modelBuilder.Entity<DistrbuteTransaction>()
-            .Property(e => e.Steps)
-            .HasConversion(GetValueConverter<DistrbuteTransaction, List<Step>>(d => d.Steps))
-            .Metadata.SetValueComparer(GetValueComparer<DistrbuteTransaction, List<Step>>(d => d.Steps));
-
+        
+        modelBuilder.Entity<BrandSocialAccount>()
+            .Property(e => e.OAuthTokenKind)
+            .HasConversion<string>();
+        
         // campaign
         modelBuilder.Entity<Campaign>()
             .Property(e => e.Type)
@@ -95,121 +89,101 @@ public class ApplicationDbContext : DbContext, IDataProtectionKeyContext
             .HasConversion<string>();
 
         modelBuilder.Entity<Campaign>()
-            .Property(e => e.TargetedNiches)
-            .HasConversion(GetValueConverter<Campaign, List<DistributorNiche>>(d => d.TargetedNiches))
-            .Metadata.SetValueComparer(GetValueComparer<Campaign, List<DistributorNiche>>(d => d.TargetedNiches));
-
-        modelBuilder.Entity<Campaign>()
             .Property(e => e.TargetedPlatforms)
             .HasConversion(GetValueConverter<Campaign, List<PlatformSplit>>(d => d.TargetedPlatforms))
             .Metadata.SetValueComparer(GetValueComparer<Campaign, List<PlatformSplit>>(d => d.TargetedPlatforms));
 
         modelBuilder.Entity<Campaign>()
-            .Property(e => e.Attachment)
-            .HasConversion(GetValueConverter<Campaign, ContentDocumentFile>(d => d.Attachment))
-            .Metadata.SetValueComparer(GetValueComparer<Campaign, ContentDocumentFile>(d => d.Attachment));
-
-        // // campaign invite
-        // modelBuilder.Entity<CampaignInvite>()
-        //     .Property(e => e.CampaignType)
-        //     .HasConversion<string>();
-        //
-        // modelBuilder.Entity<CampaignInvite>()
-        //     .Property(e => e.Platform)
-        //     .HasConversion<string>();
-        //
-        // modelBuilder.Entity<CampaignInvite>()
-        //     .Property(e => e.Status)
-        //     .HasConversion<string>();
-        //
-        // modelBuilder.Entity<CampaignInvite>()
-        //     .Property(e => e.Attachment)
-        //     .HasConversion(GetValueConverter<CampaignInvite, ContentDocumentFile>(d => d.Attachment))
-        //     .Metadata.SetValueComparer(GetValueComparer<CampaignInvite, ContentDocumentFile>(d => d.Attachment));
-        //
-        // // post
-        // modelBuilder.Entity<Post>()
-        //     .Property(e => e.CampaignType)
-        //     .HasConversion<string>();
-        //
-        // modelBuilder.Entity<Post>()
-        //     .Property(e => e.Platform)
-        //     .HasConversion<string>();
-        //
-        // modelBuilder.Entity<Post>()
-        //     .Property(e => e.AdStatus)
-        //     .HasConversion<string>();
-        //
-        // modelBuilder.Entity<Post>()
-        //     .Property(e => e.AdApprovalStatus)
-        //     .HasConversion<string>();
-        //
-        // modelBuilder.Entity<Post>()
-        //     .Property(e => e.AdPayoutStatus)
-        //     .HasConversion<string>();
-        //
-        // modelBuilder.Entity<Post>()
-        //     .Property(e => e.Attachment)
-        //     .HasConversion(GetValueConverter<Post, ContentDocumentFile>(d => d.Attachment))
-        //     .Metadata.SetValueComparer(GetValueComparer<Post, ContentDocumentFile>(d => d.Attachment));
-
-        // brand
-        modelBuilder.Entity<Brand>()
-            .Property(e => e.Niches)
-            .HasConversion(GetValueConverter<Brand, List<BrandNiche>>(d => d.Niches))
-            .Metadata.SetValueComparer(GetValueComparer<Brand, List<BrandNiche>>(d => d.Niches));
-
-        // Brand member
-        modelBuilder.Entity<BrandMember>()
-            .Property(e => e.Role)
+            .Property(e => e.ContentType)
             .HasConversion<string>();
 
-        // Brand invite
-        modelBuilder.Entity<BrandInvite>()
-            .Property(e => e.Role)
-            .HasConversion<string>();
-
-        modelBuilder.Entity<BrandInvite>()
+        // campaign invite
+        modelBuilder.Entity<CampaignInvite>()
             .Property(e => e.Status)
             .HasConversion<string>();
+        
+        // DistrbuteTransaction
+        modelBuilder.Entity<DistrbuteTransaction>()
+            .Property(e => e.Source)
+            .HasConversion(GetValueConverter<DistrbuteTransaction, Depository>(d => d.Source))
+            .Metadata.SetValueComparer(GetValueComparer<DistrbuteTransaction, Depository>(d => d.Source));
+        
+        modelBuilder.Entity<DistrbuteTransaction>()
+            .Property(e => e.Destination)
+            .HasConversion(GetValueConverter<DistrbuteTransaction, Depository>(d => d.Destination))
+            .Metadata.SetValueComparer(GetValueComparer<DistrbuteTransaction, Depository>(d => d.Destination));
+        
+        modelBuilder.Entity<DistrbuteTransaction>()
+            .Property(e => e.TransactionType)
+            .HasConversion<string>();
+        
+        modelBuilder.Entity<DistrbuteTransaction>()
+            .Property(e => e.PaymentProcessor)
+            .HasConversion<string>();
 
-        // // social account
-        // modelBuilder.Entity<SocialAccount>()
-        //     .Property(e => e.Platform)
-        //     .HasConversion<string>();
-        //
-        // modelBuilder.Entity<SocialAccount>()
-        //     .Property(e => e.AudienceAgeGroups)
-        //     .HasConversion(GetValueConverter<SocialAccount, List<AgeGroup>>(d => d.AudienceAgeGroups))
-        //     .Metadata.SetValueComparer(GetValueComparer<SocialAccount, List<AgeGroup>>(d => d.AudienceAgeGroups));
-        //
-        // modelBuilder.Entity<SocialAccount>()
-        //     .Property(e => e.AudienceGenders)
-        //     .HasConversion(GetValueConverter<SocialAccount, List<AudienceGender>>(d => d.AudienceGenders))
-        //     .Metadata.SetValueComparer(GetValueComparer<SocialAccount, List<AudienceGender>>(d => d.AudienceGenders));
-        //
-        // modelBuilder.Entity<SocialAccount>()
-        //     .Property(e => e.Audience)
-        //     .HasConversion(GetValueConverter<SocialAccount, List<AudiencePersona>>(d => d.Audience))
-        //     .Metadata.SetValueComparer(GetValueComparer<SocialAccount, List<AudiencePersona>>(d => d.Audience));
-        //
-        // modelBuilder.Entity<SocialAccount>()
-        //     .Property(e => e.AudienceLocations)
-        //     .HasConversion(GetValueConverter<SocialAccount, List<AudienceLocation>>(d => d.AudienceLocations))
-        //     .Metadata.SetValueComparer(
-        //         GetValueComparer<SocialAccount, List<AudienceLocation>>(d => d.AudienceLocations));
-        //
-        // modelBuilder.Entity<SocialAccount>()
-        //     .Property(e => e.ExcludeFromNiche)
-        //     .HasConversion(GetValueConverter<SocialAccount, List<Niche>>(d => d.ExcludeFromNiche))
-        //     .Metadata.SetValueComparer(GetValueComparer<SocialAccount, List<Niche>>(d => d.ExcludeFromNiche));
-        //
-        // modelBuilder.Entity<SocialAccount>()
-        //     .Property(e => e.ExcludeFromContent)
-        //     .HasConversion(GetValueConverter<SocialAccount, List<ContentType>>(d => d.ExcludeFromContent))
-        //     .Metadata.SetValueComparer(
-        //         GetValueComparer<SocialAccount, List<ContentType>>(d => d.ExcludeFromContent));
+        modelBuilder.Entity<DistrbuteTransaction>()
+            .Property(e => e.TransactionStatus)
+            .HasConversion<string>();
 
+        modelBuilder.Entity<DistrbuteTransaction>()
+            .Property(e => e.Steps)
+            .HasConversion(GetValueConverter<DistrbuteTransaction, List<Step>>(d => d.Steps))
+            .Metadata.SetValueComparer(GetValueComparer<DistrbuteTransaction, List<Step>>(d => d.Steps));
+        
+        // DistributorNiche
+        modelBuilder.Entity<DistributorNiche>()
+            .HasIndex(e => e.Name)
+            .IsUnique();
+        
+        // social account
+            // Indexes
+        modelBuilder.Entity<DistributorSocialAccount>()
+            .HasIndex(s => s.Platform);
+        
+        modelBuilder.Entity<DistributorSocialAccount>()
+            .HasIndex(s => s.StoryPaidViews);
+        
+        modelBuilder.Entity<DistributorSocialAccount>()
+            .HasIndex(s => s.ReelPaidViews);
+        
+        modelBuilder.Entity<DistributorSocialAccount>()
+            .HasIndex(s => s.ShortPaidViews);
+        
+        modelBuilder.Entity<DistributorSocialAccount>()
+            .HasIndex(s => s.PostPaidViews);
+        
+            // Other
+        modelBuilder.Entity<DistributorSocialAccount>()
+            .Property(e => e.Platform)
+            .HasConversion<string>();
+        
+        modelBuilder.Entity<DistributorSocialAccount>()
+            .Property(e => e.OAuthTokenKind)
+            .HasConversion<string>();
+        
+        modelBuilder.Entity<DistributorSocialAccount>()
+            .Property(e => e.ExcludeFromContent)
+            .HasConversion(GetValueConverter<DistributorSocialAccount, List<ContentType>>(d => d.ExcludeFromContent))
+            .Metadata.SetValueComparer(
+                GetValueComparer<DistributorSocialAccount, List<ContentType>>(d => d.ExcludeFromContent));
+        
+        // post
+        modelBuilder.Entity<Post>()
+            .Property(e => e.PostStatus)
+            .HasConversion<string>();
+        
+        modelBuilder.Entity<Post>()
+            .Property(e => e.PostApprovalStatus)
+            .HasConversion<string>();
+        
+        modelBuilder.Entity<Post>()
+            .Property(e => e.PostPayoutStatus)
+            .HasConversion<string>();
+        
+        modelBuilder.Entity<Post>()
+            .Property(e => e.ContentType)
+            .HasConversion<string>();
+        
         // wallet
         modelBuilder.Entity<Wallet>()
             .Property(e => e.Type)

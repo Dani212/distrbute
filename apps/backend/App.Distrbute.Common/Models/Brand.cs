@@ -5,6 +5,6 @@ namespace App.Distrbute.Common.Models;
 
 public class Brand : BaseBrandDistributor
 {
-    [Required] public List<Niche> Niches { get; set; } = [];
+    [Required] public List<BrandNiche> Niches { get; set; } = [];
     [Required] public string Bio { get; set; } = null!;
 }

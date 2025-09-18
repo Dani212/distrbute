@@ -5,6 +5,7 @@ using App.Distrbute.Common;
 using App.Distrbute.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ObjectStorage.Sdk.Dtos;
@@ -15,9 +16,11 @@ using Socials.Sdk.Dtos;
 namespace App.Distrbute.Common.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250919173206_add_distributor_niche")]
+    partial class add_distributor_niche
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -195,9 +198,6 @@ namespace App.Distrbute.Common.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("DistributorSocialAccountId")
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -211,8 +211,6 @@ namespace App.Distrbute.Common.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BrandId");
-
-                    b.HasIndex("DistributorSocialAccountId");
 
                     b.HasIndex("Name")
                         .IsUnique();
@@ -576,9 +574,6 @@ namespace App.Distrbute.Common.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("DistributorSocialAccountId")
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -590,8 +585,6 @@ namespace App.Distrbute.Common.Migrations
                         .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DistributorSocialAccountId");
 
                     b.HasIndex("Name")
                         .IsUnique();
@@ -629,6 +622,10 @@ namespace App.Distrbute.Common.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
+                    b.Property<List<BrandNiche>>("ExcludeFromNiche")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<string>("ExternalId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -651,6 +648,10 @@ namespace App.Distrbute.Common.Migrations
 
                     b.Property<DateTime>("LastSynced")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<List<DistributorNiche>>("Niches")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("OAuthTokenKind")
                         .IsRequired()
@@ -1096,10 +1097,6 @@ namespace App.Distrbute.Common.Migrations
                     b.HasOne("App.Distrbute.Common.Models.Brand", null)
                         .WithMany("Niches")
                         .HasForeignKey("BrandId");
-
-                    b.HasOne("App.Distrbute.Common.Models.DistributorSocialAccount", null)
-                        .WithMany("ExcludeFromNiche")
-                        .HasForeignKey("DistributorSocialAccountId");
                 });
 
             modelBuilder.Entity("App.Distrbute.Common.Models.BrandSocialAccount", b =>
@@ -1185,13 +1182,6 @@ namespace App.Distrbute.Common.Migrations
                     b.Navigation("Email");
                 });
 
-            modelBuilder.Entity("App.Distrbute.Common.Models.DistributorNiche", b =>
-                {
-                    b.HasOne("App.Distrbute.Common.Models.DistributorSocialAccount", null)
-                        .WithMany("Niches")
-                        .HasForeignKey("DistributorSocialAccountId");
-                });
-
             modelBuilder.Entity("App.Distrbute.Common.Models.DistributorSocialAccount", b =>
                 {
                     b.HasOne("App.Distrbute.Common.Models.Distributor", "Distributor")
@@ -1272,13 +1262,6 @@ namespace App.Distrbute.Common.Migrations
 
             modelBuilder.Entity("App.Distrbute.Common.Models.Brand", b =>
                 {
-                    b.Navigation("Niches");
-                });
-
-            modelBuilder.Entity("App.Distrbute.Common.Models.DistributorSocialAccount", b =>
-                {
-                    b.Navigation("ExcludeFromNiche");
-
                     b.Navigation("Niches");
                 });
 #pragma warning restore 612, 618

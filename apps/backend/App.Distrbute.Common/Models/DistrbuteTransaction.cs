@@ -8,10 +8,6 @@ namespace App.Distrbute.Common.Models;
 
 public class DistrbuteTransaction : BaseModel
 {
-    public int? LedgerClientId { get; set; }
-    public int? LedgerProductId { get; set; }
-    public int? LedgerAccountId { get; set; }
-    
     [Persistence.Sdk.Models.ForeignKey]
     public Brand? Brand { get; set; }
     
@@ -19,11 +15,20 @@ public class DistrbuteTransaction : BaseModel
     public Distributor? Distributor { get; set; }
     
     public int? LedgerActionId { get; set; }
-    [Required] public string Currency { get; set; } = "GHS";
-    [Required] public string Description { get; set; } = null!;
-    [Required] public string IntegrationChannel { get; set; } = null!;
-    [Column(TypeName = "jsonb")] public Depository? Source { get; set; }
-    [Column(TypeName = "jsonb")] public Depository? Destination { get; set; }
+    
+    [Required] 
+    public string Currency { get; set; } = "GHS";
+    
+    [Required]
+    public string Description { get; set; } = null!;
+    
+    [Required] 
+    public string IntegrationChannel { get; set; } = null!;
+    
+    [Required, Column(TypeName = "jsonb")] 
+    public Depository Source { get; set; }
+    [Column(TypeName = "jsonb")] 
+    public Depository? Destination { get; set; }
 
     /// <summary>
     ///     topup, escrow, payment, withdrawal
@@ -48,7 +53,7 @@ public class DistrbuteTransaction : BaseModel
     [Required]
     public TransactionStatus TransactionStatus { get; set; } = TransactionStatus.Pending;
 
-    [Required] public DateTime TransactionDate { get; set; }
+    [Required] public DateTime? TransactionDate { get; set; }
     public DateTime? SettledDate { get; set; }
     [Column(TypeName = "jsonb")] public List<Step> Steps { get; set; } = [];
 }
@@ -58,6 +63,7 @@ public class Depository
     public string Id { get; set; } = null!;
     public int WalletAccountId { get; set; }
     public int WalletProductId { get; set; }
+    public int WalletClientId { get; set; }
     public string WalletAccountNumber { get; set; } = null!;
     public string WalletAuthorizationCode { get; set; } = null!;
     public string WalletRecipientCode { get; set; } = null!;

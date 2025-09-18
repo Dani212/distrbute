@@ -8,14 +8,15 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ObjectStorage.Sdk.Dtos;
+using Socials.Sdk.Dtos;
 
 #nullable disable
 
 namespace App.Distrbute.Common.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250916113237_Add_Data_Protection")]
-    partial class Add_Data_Protection
+    [Migration("20250918185602_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -151,12 +152,90 @@ namespace App.Distrbute.Common.Migrations
                     b.ToTable("BrandMembers");
                 });
 
+            modelBuilder.Entity("App.Distrbute.Common.Models.BrandSocialAccount", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AccessToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("AccessTokenExpiry")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("BrandId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("FollowersCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("FollowingCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Handle")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDisabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("LastSynced")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("OAuthTokenKind")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProfileImageUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProfileLink")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("RefreshTokenExpiry")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BrandId");
+
+                    b.ToTable("BrandSocialAccounts");
+                });
+
             modelBuilder.Entity("App.Distrbute.Common.Models.Campaign", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<string>("Attachment")
+                    b.Property<ContentDocumentFile>("Attachment")
                         .HasColumnType("jsonb");
 
                     b.Property<string>("BrandId")
@@ -165,6 +244,10 @@ namespace App.Distrbute.Common.Migrations
 
                     b.Property<double>("Budget")
                         .HasColumnType("double precision");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -210,7 +293,72 @@ namespace App.Distrbute.Common.Migrations
 
                     b.HasIndex("FundingTransactionId");
 
-                    b.ToTable("Campaign");
+                    b.ToTable("Campaigns");
+                });
+
+            modelBuilder.Entity("App.Distrbute.Common.Models.CampaignInvite", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<double>("Ask")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Bid")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("BrandId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CampaignId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeclinedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("DistributorSocialAccountId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("Expiry")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("PostSubmitted")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("Reach")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BrandId");
+
+                    b.HasIndex("CampaignId");
+
+                    b.HasIndex("DistributorSocialAccountId");
+
+                    b.ToTable("CampaignInvites");
                 });
 
             modelBuilder.Entity("App.Distrbute.Common.Models.DistrbuteTransaction", b =>
@@ -248,7 +396,7 @@ namespace App.Distrbute.Common.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Depository>("Destination")
+                    b.Property<string>("Destination")
                         .HasColumnType("jsonb");
 
                     b.Property<string>("DistributorId")
@@ -261,16 +409,7 @@ namespace App.Distrbute.Common.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<int?>("LedgerAccountId")
-                        .HasColumnType("integer");
-
                     b.Property<int?>("LedgerActionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("LedgerClientId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("LedgerProductId")
                         .HasColumnType("integer");
 
                     b.Property<string>("PaymentProcessor")
@@ -285,7 +424,8 @@ namespace App.Distrbute.Common.Migrations
                     b.Property<DateTime?>("SettledDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<Depository>("Source")
+                    b.Property<string>("Source")
+                        .IsRequired()
                         .HasColumnType("jsonb");
 
                     b.Property<string>("Steps")
@@ -356,6 +496,121 @@ namespace App.Distrbute.Common.Migrations
                     b.ToTable("Distributors");
                 });
 
+            modelBuilder.Entity("App.Distrbute.Common.Models.DistributorSocialAccount", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AccessToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("AccessTokenExpiry")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("AudienceLastUpdated")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DistributorId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExcludeFromContent")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("ExcludeFromNiche")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("FollowersCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("FollowingCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Handle")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDisabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("LastSynced")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Niches")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("OAuthTokenKind")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("PostPaidViews")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ProfileImageUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProfileLink")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("ReelPaidViews")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("RefreshTokenExpiry")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<long>("ShortPaidViews")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("StoryPaidViews")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DistributorId");
+
+                    b.HasIndex("Platform");
+
+                    b.HasIndex("PostPaidViews");
+
+                    b.HasIndex("ReelPaidViews");
+
+                    b.HasIndex("ShortPaidViews");
+
+                    b.HasIndex("StoryPaidViews");
+
+                    b.ToTable("DistributorSocialAccounts");
+                });
+
             modelBuilder.Entity("App.Distrbute.Common.Models.Email", b =>
                 {
                     b.Property<string>("Id")
@@ -386,6 +641,141 @@ namespace App.Distrbute.Common.Migrations
                     b.ToTable("Emails");
                 });
 
+            modelBuilder.Entity("App.Distrbute.Common.Models.Post", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BrandId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BrandSocialAccountId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CampaignInviteId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("DistrbuteTransactionId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DistributorSocialAccountId")
+                        .HasColumnType("text");
+
+                    b.Property<Embedding>("Embedding")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("ExternalPostId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Link")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PostApprovalStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PostPayoutStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PostStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PostValuationId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("PostedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BrandId");
+
+                    b.HasIndex("BrandSocialAccountId");
+
+                    b.HasIndex("CampaignInviteId");
+
+                    b.HasIndex("DistrbuteTransactionId");
+
+                    b.HasIndex("DistributorSocialAccountId");
+
+                    b.HasIndex("PostValuationId");
+
+                    b.ToTable("Posts");
+                });
+
+            modelBuilder.Entity("App.Distrbute.Common.Models.PostMetric", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<double>("AuthenticityScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<long>("CommentCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<double>("ConversionScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<double>("EngagementDepthRatio")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("EngagementRate")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("EstimatedConversions")
+                        .HasColumnType("double precision");
+
+                    b.Property<long>("FollowersCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("LikeCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("QuoteCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("SavedCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ShareCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<long>("ViewCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<double>("WeightedEngagementScore")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PostMetrics");
+                });
+
             modelBuilder.Entity("App.Distrbute.Common.Models.SuspenseWallet", b =>
                 {
                     b.Property<string>("Id")
@@ -398,14 +788,13 @@ namespace App.Distrbute.Common.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("ClientId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("DistributorId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("EmailId")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -421,8 +810,6 @@ namespace App.Distrbute.Common.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DistributorId");
-
-                    b.HasIndex("EmailId");
 
                     b.ToTable("SuspenseWallets");
                 });
@@ -452,14 +839,13 @@ namespace App.Distrbute.Common.Migrations
                     b.Property<string>("BrandId")
                         .HasColumnType("text");
 
+                    b.Property<int>("ClientId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("DistributorId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("EmailId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
@@ -493,8 +879,6 @@ namespace App.Distrbute.Common.Migrations
                     b.HasIndex("BrandId");
 
                     b.HasIndex("DistributorId");
-
-                    b.HasIndex("EmailId");
 
                     b.ToTable("Wallets");
                 });
@@ -593,6 +977,17 @@ namespace App.Distrbute.Common.Migrations
                     b.Navigation("Email");
                 });
 
+            modelBuilder.Entity("App.Distrbute.Common.Models.BrandSocialAccount", b =>
+                {
+                    b.HasOne("App.Distrbute.Common.Models.Brand", "Brand")
+                        .WithMany()
+                        .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Brand");
+                });
+
             modelBuilder.Entity("App.Distrbute.Common.Models.Campaign", b =>
                 {
                     b.HasOne("App.Distrbute.Common.Models.Brand", "Brand")
@@ -610,6 +1005,33 @@ namespace App.Distrbute.Common.Migrations
                     b.Navigation("Brand");
 
                     b.Navigation("FundingTransaction");
+                });
+
+            modelBuilder.Entity("App.Distrbute.Common.Models.CampaignInvite", b =>
+                {
+                    b.HasOne("App.Distrbute.Common.Models.Brand", "Brand")
+                        .WithMany()
+                        .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("App.Distrbute.Common.Models.Campaign", "Campaign")
+                        .WithMany()
+                        .HasForeignKey("CampaignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("App.Distrbute.Common.Models.DistributorSocialAccount", "DistributorSocialAccount")
+                        .WithMany()
+                        .HasForeignKey("DistributorSocialAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Brand");
+
+                    b.Navigation("Campaign");
+
+                    b.Navigation("DistributorSocialAccount");
                 });
 
             modelBuilder.Entity("App.Distrbute.Common.Models.DistrbuteTransaction", b =>
@@ -638,6 +1060,58 @@ namespace App.Distrbute.Common.Migrations
                     b.Navigation("Email");
                 });
 
+            modelBuilder.Entity("App.Distrbute.Common.Models.DistributorSocialAccount", b =>
+                {
+                    b.HasOne("App.Distrbute.Common.Models.Distributor", "Distributor")
+                        .WithMany()
+                        .HasForeignKey("DistributorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Distributor");
+                });
+
+            modelBuilder.Entity("App.Distrbute.Common.Models.Post", b =>
+                {
+                    b.HasOne("App.Distrbute.Common.Models.Brand", "Brand")
+                        .WithMany()
+                        .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("App.Distrbute.Common.Models.BrandSocialAccount", "BrandSocialAccount")
+                        .WithMany()
+                        .HasForeignKey("BrandSocialAccountId");
+
+                    b.HasOne("App.Distrbute.Common.Models.CampaignInvite", "CampaignInvite")
+                        .WithMany()
+                        .HasForeignKey("CampaignInviteId");
+
+                    b.HasOne("App.Distrbute.Common.Models.DistrbuteTransaction", "DistrbuteTransaction")
+                        .WithMany()
+                        .HasForeignKey("DistrbuteTransactionId");
+
+                    b.HasOne("App.Distrbute.Common.Models.DistributorSocialAccount", "DistributorSocialAccount")
+                        .WithMany()
+                        .HasForeignKey("DistributorSocialAccountId");
+
+                    b.HasOne("App.Distrbute.Common.Models.PostMetric", "PostValuation")
+                        .WithMany()
+                        .HasForeignKey("PostValuationId");
+
+                    b.Navigation("Brand");
+
+                    b.Navigation("BrandSocialAccount");
+
+                    b.Navigation("CampaignInvite");
+
+                    b.Navigation("DistrbuteTransaction");
+
+                    b.Navigation("DistributorSocialAccount");
+
+                    b.Navigation("PostValuation");
+                });
+
             modelBuilder.Entity("App.Distrbute.Common.Models.SuspenseWallet", b =>
                 {
                     b.HasOne("App.Distrbute.Common.Models.Distributor", "Distributor")
@@ -646,15 +1120,7 @@ namespace App.Distrbute.Common.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("App.Distrbute.Common.Models.Email", "Email")
-                        .WithMany()
-                        .HasForeignKey("EmailId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Distributor");
-
-                    b.Navigation("Email");
                 });
 
             modelBuilder.Entity("App.Distrbute.Common.Models.Wallet", b =>
@@ -667,17 +1133,9 @@ namespace App.Distrbute.Common.Migrations
                         .WithMany()
                         .HasForeignKey("DistributorId");
 
-                    b.HasOne("App.Distrbute.Common.Models.Email", "Email")
-                        .WithMany()
-                        .HasForeignKey("EmailId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Brand");
 
                     b.Navigation("Distributor");
-
-                    b.Navigation("Email");
                 });
 #pragma warning restore 612, 618
         }

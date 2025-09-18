@@ -6,9 +6,6 @@ namespace App.Distrbute.Common.Models;
 
 public class BaseWallet : BaseModel
 {
-    [ForeignKey]
-    [Required] public Email Email { get; set; } = null!;
-
     /// <summary>
     ///     Savings Product this wallet belongs to on ledger
     /// </summary>
@@ -20,6 +17,9 @@ public class BaseWallet : BaseModel
     /// </summary>
     [Required]
     public int AccountId { get; set; }
+    
+    [Required]
+    public int ClientId { get; set; }
 
     [Required] public string? AccountName { get; set; }
 }
@@ -43,6 +43,7 @@ public static class BaseWalletExtensions
         depo.Id = wallet.Id;
         depo.WalletAccountId = wallet.AccountId;
         depo.WalletProductId = wallet.ProductId;
+        depo.WalletClientId = wallet.ClientId;
         depo.WalletAccountName = wallet.AccountName;
         return depo;
     }
