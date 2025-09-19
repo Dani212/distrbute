@@ -6,7 +6,8 @@ namespace App.Distrbute.Common.Models;
 
 public class BrandMember : BrandResource
 {
-    [ForeignKey]
-    [Required] public Email Email { get; set; } = null!;
-    [Required] public BrandRole? Role { get; set; }
+    [Required, ForeignKey]
+    public Email Email { get; set; } = null!;
+    [Required] 
+    public BrandRole? Role { get; set; }
 }

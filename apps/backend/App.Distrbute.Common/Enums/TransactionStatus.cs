@@ -12,7 +12,6 @@ public enum TransactionStatus
     [EnumMember(Value = "InProgress")] InProgress,
     [EnumMember(Value = "Challenged")] Challenged,
     [EnumMember(Value = "Successful")] Successful,
-    [EnumMember(Value = "Failed")] Failed,
 
     [EnumMember(Value = "LockedForDeposit")]
     LockedForDeposit

@@ -18,12 +18,11 @@ public class Wallet : BaseWallet
     /// <summary>
     ///     Account number from selected provider
     /// </summary>
-    [Required]
-    [Redacted]
+    [Required, Redacted]
     public string AccountNumber { get; set; } = null!;
 
-    [Required] public PaymentChannel Type { get; set; }
-    [Required] public PaymentChannelProvider Provider { get; set; }
+    [Required] public PaymentChannel? Type { get; set; }
+    [Required] public PaymentChannelProvider? Provider { get; set; }
     public string? ProviderLogoUrl { get; set; } 
     public string? AuthorizationCode { get; set; }
     public string? RecipientCode { get; set; }
@@ -55,11 +54,12 @@ public static class WalletExtensions
         depo.Id = wallet.Id;
         depo.WalletAccountId = wallet.AccountId;
         depo.WalletProductId = wallet.ProductId;
+        depo.WalletClientId = wallet.ClientId;
         depo.WalletAccountName = wallet.AccountName;
         depo.WalletAccountNumber = wallet.AccountNumber;
-        depo.WalletProvider = wallet.Provider;
+        depo.WalletProvider = wallet.Provider!.Value;
         depo.WalletProviderLogoUrl = wallet.ProviderLogoUrl;
-        depo.WalletType = wallet.Type;
+        depo.WalletType = wallet.Type!.Value;
 
         return depo;
     }

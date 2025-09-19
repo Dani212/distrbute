@@ -5,7 +5,7 @@ using Newtonsoft.Json.Converters;
 namespace App.Distrbute.Common.Enums;
 
 [JsonConverter(typeof(StringEnumConverter))]
-public enum AdStatus
+public enum PostStatus
 {
     Default = 0,
 
@@ -14,7 +14,7 @@ public enum AdStatus
 }
 
 [JsonConverter(typeof(StringEnumConverter))]
-public enum AdApprovalStatus
+public enum PostApprovalStatus
 {
     Default = 0,
 
@@ -24,12 +24,12 @@ public enum AdApprovalStatus
 }
 
 [JsonConverter(typeof(StringEnumConverter))]
-public enum AdPayoutStatus
+public enum PostPayoutStatus
 {
     Default = 0,
 
     [EnumMember(Value = "Pending")] Pending,
     [EnumMember(Value = "Paid")] Paid,
     [EnumMember(Value = "InProgress")] InProgress,
-    [EnumMember(Value = "Failed")] Failed
+    [EnumMember(Value = "Challenged")] Challenged
 }

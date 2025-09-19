@@ -7,6 +7,6 @@ namespace App.Distrbute.Common.Models;
 [Redactable]
 public class SuspenseWallet : BaseWallet
 {
-    [ForeignKey]
-    [Required] public Distributor Distributor { get; set; } = null!;
+    [Required, ForeignKey]
+    public Distributor Distributor { get; set; } = null!;
 }
