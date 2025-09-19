@@ -5,9 +5,14 @@ using Logged.Sdk.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using ObjectStorage.Sdk.Exceptions;
+using Paystack.Sdk.Exceptions;
+using Pipeline.Sdk.Core;
+using Quartz;
 using Redis.Sdk.Exceptions;
 using Refit;
 using Rest.Sdk.Exceptions;
+using Scheduler.Sdk.Exceptions;
+using Socials.Sdk.Exceptions;
 using StackExchange.Redis;
 using Utility.Sdk.Dtos;
 using Utility.Sdk.Exceptions;
@@ -51,7 +56,7 @@ public class GlobalExceptionHandler : IExceptionHandler
                     exception.GetBaseException().Message);
 
                 problemDetails = Utility.Sdk.Dtos.ApiResponse<object>.Default.ToFailedDependencyApiResponse(
-                    exception.Message);
+                    "We couldn’t save your changes just now. Let’s try again in a moment.");
 
                 break;
             }
@@ -71,7 +76,7 @@ public class GlobalExceptionHandler : IExceptionHandler
                 break;
             }
             case RedisTimeoutException or RedisOperationException
-                // or PayStackException or ScheduleException or SchedulerException
+                or PayStackException or ScheduleException or SchedulerException
                 or ObjectStorageException
                 or AmazonClientException:
             {
@@ -89,10 +94,10 @@ public class GlobalExceptionHandler : IExceptionHandler
                     exception.Message);
 
                 break;
-            // case TwitterException twitterException:
-            //     problemDetails = new Utility.Sdk.Dtos.ApiResponse<object>(twitterException.Message,
-            //         twitterException.StatusCode());
-            //     break;
+            case TwitterException twitterException:
+                problemDetails = new Utility.Sdk.Dtos.ApiResponse<object>(twitterException.Message,
+                    twitterException.StatusCode());
+                break;
             case Forbidden or ForbiddenObjectStorageAccessException:
             {
                 problemDetails = Utility.Sdk.Dtos.ApiResponse<object>.Default.ToForbiddenApiResponse(exception.Message);
@@ -121,12 +126,10 @@ public class GlobalExceptionHandler : IExceptionHandler
                     (int)apiException.StatusCode);
 
                 break;
-            // case PipelineException pipelineException:
-            //     var effective = pipelineException.GetBaseException();
-            //
-            //     return await TryHandleAsync(httpContext, effective, cancellationToken);
-            //
-            //     break;
+            case PipelineException pipelineException:
+                var effective = pipelineException.GetBaseException();
+            
+                return await TryHandleAsync(httpContext, effective, cancellationToken);
             default:
             {
                 _logger.LogError(

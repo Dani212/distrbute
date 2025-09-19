@@ -1,8 +1,11 @@
 ﻿using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using App.Distrbute.Api.Common.Authentication;
+using App.Distrbute.Api.Common.Middlewares;
 using App.Distrbute.Api.Common.Options;
 using App.Distrbute.Common;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
@@ -14,12 +17,13 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Utility.Sdk.Dtos;
+using Utility.Sdk.Exceptions;
 
 namespace App.Distrbute.Api.Common.Extensions;
 
 public static class ServiceCollectionExtension
 {
-    public static IServiceCollection AddBearerAuth(
+    public static IServiceCollection AddBearerWithBasicAuth(
         this IServiceCollection services,
         IConfiguration configuration)
     {
@@ -27,13 +31,11 @@ public static class ServiceCollectionExtension
             configuration.GetRequiredSection(nameof(BearerTokenConfig)).Bind(bearerTokenConfig);
         var bearerConfig = new BearerTokenConfig();
         bearerTokenConfigAction.Invoke(bearerConfig);
+        
+        services.Configure<BasicAuthConfig>(c =>
+            configuration.GetRequiredSection(nameof(BasicAuthConfig)).Bind(c));
 
-        services.AddAuthentication(x =>
-            {
-                x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
+        services.AddAuthentication()
             .AddJwtBearer(x =>
             {
                 x.SaveToken = true;
@@ -79,7 +81,8 @@ public static class ServiceCollectionExtension
                     },
                     OnTokenValidated = JwtIdentityPrincipalExtensions.AuthenticateJwtUserIdentity()
                 };
-            });
+            })
+            .AddScheme<AuthenticationSchemeOptions, BasicAuthHandler>(CommonConstants.AuthScheme.BASIC, null);
 
         return services;
     }
@@ -87,7 +90,7 @@ public static class ServiceCollectionExtension
     public static IServiceCollection AddSwaggerGen(
         this IServiceCollection services,
         IConfiguration configuration,
-        string SchemeName)
+        string schemeName)
     {
         services.Configure<ApiDocsConfig>(c => configuration.GetRequiredSection(nameof(ApiDocsConfig)).Bind(c));
 
@@ -99,14 +102,14 @@ public static class ServiceCollectionExtension
         {
             c.EnableAnnotations();
 
-            c.AddSecurityDefinition(SchemeName, new OpenApiSecurityScheme
+            c.AddSecurityDefinition(schemeName, new OpenApiSecurityScheme
             {
                 Description = $@"Enter '[schemeName]' [space] and then your token in the text input below.<br/>
-                      Example: '{SchemeName} 12345abcdef'",
+                      Example: '{schemeName} 12345abcdef'",
                 Name = CommonConstants.AUTHORIZATION,
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.ApiKey,
-                Scheme = SchemeName
+                Scheme = schemeName
             });
 
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -117,10 +120,10 @@ public static class ServiceCollectionExtension
                         Reference = new OpenApiReference
                         {
                             Type = ReferenceType.SecurityScheme,
-                            Id = SchemeName
+                            Id = schemeName
                         },
                         Scheme = "oauth2",
-                        Name = SchemeName,
+                        Name = schemeName,
                         In = ParameterLocation.Header
                     },
                     Array.Empty<string>()
@@ -168,6 +171,7 @@ public static class ServiceCollectionExtension
         services.AddControllers(options =>
             {
                 options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+                options.Filters.Add<DtoValidationFilter>();
             })
             .AddJsonOptions(options =>
             {
@@ -178,22 +182,14 @@ public static class ServiceCollectionExtension
             {
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                 options.SerializerSettings.Converters.Add(new StringEnumConverter());
-            })
-            .ConfigureApiBehaviorOptions(options =>
-            {
-                options.InvalidModelStateResponseFactory = InvalidModelStateHandler;
             });
 
-        static IActionResult InvalidModelStateHandler(ActionContext context)
-        {
-            return new BadRequestObjectResult(new ApiResponse<object>(
-                "Validation Errors",
-                400,
-                Errors: string.Join("; ",
-                    context.ModelState
-                        .Where(m => m.Value?.Errors?.Count > 0)
-                        .SelectMany(m => m.Value!.Errors.Select(e => $"Field: {m.Key}, Error: {e.ErrorMessage}")))));
-        }
+        return services;
+    }
+    
+    public static IServiceCollection AddPriceConfig(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<PriceConfig>(c => configuration.GetRequiredSection(nameof(PriceConfig)).Bind(c));
 
         return services;
     }
