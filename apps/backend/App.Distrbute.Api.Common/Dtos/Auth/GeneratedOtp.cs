@@ -21,7 +21,7 @@ public class GeneratedOtpCachePayload : GeneratedOtp
 
 public static class CacheExtensions
 {
-    public static bool IsValid(this GeneratedOtpCachePayload cachePayload, OtpVerificationRequest request, IDataProtectionService dataProtectionService)
+    public static bool IsValid(this GeneratedOtpCachePayload cachePayload, OtpVerificationRequest request, IDataProtectionSdk dataProtectionService)
     {
         var hashesMatch = dataProtectionService.VerifyHash(request.OtpCode, cachePayload.OtpCode);
         

@@ -33,7 +33,7 @@ public class AuthenticationService : IAuthenticationService
     private readonly IRedisRepository _redisRepository;
     private readonly ISavingsClientSdk _savingsClientSdk;
     private readonly MailTemplateConfig  _mailTemplateConfig;
-    private readonly IDataProtectionService _dataProtectionService;
+    private readonly IDataProtectionSdk _dataProtectionService;
 
     public AuthenticationService(
         IOptions<MailTemplateConfig> mailTemplateConfig,
@@ -42,7 +42,7 @@ public class AuthenticationService : IAuthenticationService
         IRedisRepository redisRepository,
         IDbRepository dbRepository,
         ISavingsClientSdk savingsClientSdk,
-        IDataProtectionService dataProtectionService)
+        IDataProtectionSdk dataProtectionService)
     {
         _mailTemplateConfig = mailTemplateConfig.Value;
         _emailClient = emailClient;
@@ -141,11 +141,11 @@ public class AuthenticationService : IAuthenticationService
         var cachedOtp =
             await _redisRepository.GetAsync<GeneratedOtpCachePayload>(cacheKey)
                 .CatchAndThrowAsOrReturn<RedisOperationException, Unauthorized, GeneratedOtpCachePayload>
-                    ("Invalid OTP code.");
+                    ("The code you entered isn’t valid. Please try again.");
 
         // Verify OTP
         await cachedOtp.IsValid(otp, _dataProtectionService)
-            .ThrowIfFalse<Unauthorized>("Invalid OTP code.");
+            .ThrowIfFalse<Unauthorized>("That code doesn’t match. Try again or request a new one.");
 
         // Get or create new user
         var existingUser = await _dbRepository
@@ -160,8 +160,8 @@ public class AuthenticationService : IAuthenticationService
 
                 var createClientRes = await _savingsClientSdk
                     .CreateAsync(createClientReq)
-                    .CatchAndRethrowOrReturn<LedgerException, BaseFineractResponseDto>(
-                        "Failed to create savings client for new user, please try again later");
+                    .CatchAndThrowAsOrReturn<LedgerException, FailedDependency, BaseFineractResponseDto>(
+                        "We couldn’t set up your account right now. Please try again or contact support.");
 
                 var newUser = new Email
                 {
@@ -174,7 +174,7 @@ public class AuthenticationService : IAuthenticationService
                 var saved = await _dbRepository
                     .AddAsync(newUser)
                     .CatchAndRethrowOrReturn<FailedDependency, Email>(
-                        "Failed to persist new user, please try again later");
+                        "We couldn’t save your details. Please try again later.");
 
                 return saved;
             });

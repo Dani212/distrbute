@@ -37,7 +37,7 @@ public class DistributorService : IDistributorService
 {
     private readonly IDbRepository _dbRepository;
     private readonly IMediaProcessor _mediaProcessor;
-    private readonly IObjectStorageService _objectStorage;
+    private readonly IObjectStorageSdk _objectStorage;
     private readonly PayStackConfig _paystackConfig;
     private readonly IPayStackSdk _payStackSdk;
     private readonly IPipelineProvider _pipelineProvider;
@@ -49,7 +49,7 @@ public class DistributorService : IDistributorService
         IOptions<SavingsProductConfig> savingsProductConfig,
         IPayStackSdk payStackSdk,
         IOptions<PayStackConfig> paystackConfig,
-        IObjectStorageService objectStorage,
+        IObjectStorageSdk objectStorage,
         IMediaProcessor mediaProcessor,
         IPipelineProvider pipelineProvider)
     {
@@ -84,6 +84,7 @@ public class DistributorService : IDistributorService
         var distributor = dto.Adapt(new Common.Models.Distributor());
         distributor.Id = Guid.NewGuid().ToString();
         distributor.Email = principal;
+        distributor.OpenToCollaboration = true;
 
         if (distributor.ProfilePicture != null)
         {
@@ -95,9 +96,9 @@ public class DistributorService : IDistributorService
         var holdWallet = new SuspenseWallet();
         holdWallet.Id = Guid.NewGuid().ToString();
         holdWallet.Distributor = distributor;
-        holdWallet.Email = principal;
         holdWallet.ProductId = ledgerReq.SavingsProductId;
         holdWallet.AccountId = ledgerResponse.SavingsId;
+        holdWallet.ClientId = principal.LedgerClientId;
         holdWallet.AccountName = dto.Name;
 
         var entities = new List<BaseModel> { holdWallet, distributor };
@@ -161,9 +162,8 @@ public class DistributorService : IDistributorService
         var existingDistributor = await GetDistributor(principal);
 
         var suspenseAccount = await _dbRepository.GetAsync<SuspenseWallet>(q => q
-            .Include(e => e.Email)
             .Include(e => e.Distributor)
-            .Where(e => e.Email.Address == principal.Address && e.Distributor.Id == existingDistributor.Id));
+            .Where(e =>  e.Distributor.Id == existingDistributor.Id));
 
         var ledgerBalance = await _walletSdk
             .GetBalanceAsync(suspenseAccount.AccountId)
@@ -235,8 +235,10 @@ public class DistributorService : IDistributorService
         var transaction = new DistrbuteTransaction();
         var integrationChannel = CommonConstants.IntegrationChannel.DistributorPortal;
         var savingsProductId = _savingsProductConfig.DistributorSavingsProduct;
-        transaction.LedgerProductId = savingsProductId;
-        transaction.LedgerClientId = principal.LedgerClientId;
+        var source = new Depository();
+        source.WalletProductId = savingsProductId;
+        source.WalletClientId = principal.LedgerClientId;
+        transaction.Source = source;
         transaction.Distributor = existingDistributor;
         transaction.Description = $"Funds topup of GHS {amount:N2} initiated by Distributor for linking wallet";
         transaction.IntegrationChannel = integrationChannel;
