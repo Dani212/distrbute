@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using App.Distrbute.Api.Common.Controllers;
+using App.Distrbute.Api.Common.Dtos.Post;
 using App.Distrbute.Api.Common.Extensions;
 using App.Distrbute.Common;
 using App.Distrbute.Distributor.Api.Dtos;

@@ -27,7 +27,9 @@ public class SocialAccountBase : BaseModel
     [Required] public DateTime? RefreshTokenExpiry { get; set; } = null!;
     [Required] public OAuthTokenKind? OAuthTokenKind { get; set; } = null!;
 
-    [Required] public DateTime? LastSynced { get; set; }
+    [Required] public DateTime? PostsLastSynced { get; set; }
+    
+    [Required] public DateTime? ProfileLastSynced { get; set; }
     
     public bool IsDisabled { get; set; }
 }
