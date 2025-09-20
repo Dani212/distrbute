@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Hosting;
+using App.Distrbute.Api.Common.Actors;
 using App.Distrbute.Api.Common.Authentication;
 using App.Distrbute.Api.Common.Extensions;
 using App.Distrbute.Api.Common.Options;
@@ -17,6 +18,7 @@ using DataProtection.Sdk.Extensions;
 using Ledgr.Sdk.Extensions;
 using Logged.Sdk.Extensions;
 using Messaging.Sdk.Extensions;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,15 +27,18 @@ using ObjectStorage.Sdk.Extensions;
 using Paystack.Sdk.Extensions;
 using Pipeline.Sdk.Extensions;
 using Redis.Sdk.Extensions;
+using Scheduler.Sdk.Extensions;
 using Socials.Sdk;
 using Socials.Sdk.Extensions;
 using Socials.Sdk.Services.Interfaces;
+using AuthenticationService = App.Distrbute.Api.Common.Services.Providers.AuthenticationService;
+using IAuthenticationService = App.Distrbute.Api.Common.Services.Interfaces.IAuthenticationService;
 
 namespace App.Distrbute.Distributor.Api.Extensions;
 
 public static class ServiceCollectionExtension
 {
-    public static IServiceCollection AddBearerAuthAndOAuth(
+    public static IServiceCollection AddBearerWithBasicAuthAndOAuth(
         this IServiceCollection services,
         IConfiguration configuration)
     {
@@ -41,13 +46,11 @@ public static class ServiceCollectionExtension
             configuration.GetRequiredSection(nameof(BearerTokenConfig)).Bind(bearerTokenConfig);
         var bearerConfig = new BearerTokenConfig();
         bearerTokenConfigAction.Invoke(bearerConfig);
+        
+        services.Configure<BasicAuthConfig>(c =>
+            configuration.GetRequiredSection(nameof(BasicAuthConfig)).Bind(c));
 
-        services.AddAuthentication(x =>
-            {
-                x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
+        services.AddAuthentication()
             .AddJwtBearer(x =>
             {
                 x.SaveToken = true;
@@ -94,10 +97,10 @@ public static class ServiceCollectionExtension
                     OnTokenValidated = JwtIdentityPrincipalExtensions.AuthenticateJwtUserIdentity()
                 };
             })
+            .AddScheme<AuthenticationSchemeOptions, BasicAuthHandler>(CommonConstants.AuthScheme.BASIC, null)
             .AddCookie(OAuthConstants.Providers.Cookie)
             .AddTwitterOAuth(services, configuration) // twitter
             .AddTiktokOAuth(services, configuration) // tiktok
-            .AddSnapchatOAuth(services, configuration) // snapchat
             .AddInstagramOAuth(services, configuration) // instagram
             ;
 
@@ -119,13 +122,23 @@ public static class ServiceCollectionExtension
         services.Configure<MailTemplateConfig>(c =>
             configuration.GetRequiredSection(nameof(MailTemplateConfig)).Bind(c));
         
+        // for handling oauth
+        services.AddLoggedScopedService<IOauthAccountHandler, SocialAccountService>();
+
         services.AddLoggedScopedService<IAuthenticationService, AuthenticationService>();
         services.AddLoggedScopedService<IDepositToWalletService, DepositToWalletService>();
+        services.AddLoggedScopedService<IDistributorNicheService, DistributorNicheService>();
         services.AddLoggedScopedService<IDistributorService, DistributorService>();
+        services.AddLoggedScopedService<IJobSchedulingService, JobSchedulingService>();
+        services.AddLoggedScopedService<IPayoutService, PayoutService>();
         services.AddLoggedScopedService<IPipelineProvider, PipelineProvider>();
-        services.AddLoggedScopedService<IOauthAccountHandler, SocialAccountService>();
+        services.AddLoggedScopedService<IPostAutoApprovalService, PostAutoApprovalService>();
+        services.AddLoggedScopedService<IPostService, PostService>();
         services.AddLoggedScopedService<ISocialAccountService, SocialAccountService>();
         services.AddLoggedScopedService<IWalletService, WalletService>();
+        // services.AddLoggedScopedService<IDashboardService, DashboardService>();
+        // services.AddLoggedScopedService<IBrandService, BrandService>();
+        // services.AddLoggedScopedService<ICampaignInviteService, CampaignInviteService>();
 
         return services;
     }
@@ -144,14 +157,10 @@ public static class ServiceCollectionExtension
         // Add Redis
         services.AddRedisSdk(configuration);
 
-        // Add ElasticSearch
-        // services.AddElasticSearchSdk(configuration);
-
-        // Add scheduelr
-        // services.AddSchedulerSdk(configuration);
+        // Add schedueler
+        services.AddSchedulerSdk(configuration);
 
         // Add object storage sdk
-        // services.AddLocalObjectStorageSdk(configuration);
         services.AddS3ObjectStorage(configuration);
 
         // Add task pipeline
@@ -182,26 +191,26 @@ public static class ServiceCollectionExtension
                         if (ex is not ActorInitializationException)
                             return Directive.Resume;
 
-                        system?.Terminate().Wait(1000);
+                        system.Terminate().Wait(1000);
 
                         return Directive.Stop;
                     });
 
-                // var processWalletDepositActorProps = resolver
-                //     .Props<ProcessPayoutActor>()
-                //     .WithSupervisorStrategy(defaultStrategy);
-                //
-                // var processWalletDepositActor =
-                //     system.ActorOf(processWalletDepositActorProps, nameof(ProcessPayoutActor));
-                // registry.Register<ProcessPayoutActor>(processWalletDepositActor);
-                //
-                // var processPostAutoApprovalActorProps = resolver
-                //     .Props<ProcessPostAutoApprovalActor>()
-                //     .WithSupervisorStrategy(defaultStrategy);
-                //
-                // var processPostAutoApprovalActor =
-                //     system.ActorOf(processPostAutoApprovalActorProps, nameof(ProcessPostAutoApprovalActor));
-                // registry.Register<ProcessPostAutoApprovalActor>(processPostAutoApprovalActor);
+                var processWalletDepositActorProps = resolver
+                    .Props<ProcessPayoutActor>()
+                    .WithSupervisorStrategy(defaultStrategy);
+                
+                var processWalletDepositActor =
+                    system.ActorOf(processWalletDepositActorProps, nameof(ProcessPayoutActor));
+                registry.Register<ProcessPayoutActor>(processWalletDepositActor);
+                
+                var processPostAutoApprovalActorProps = resolver
+                    .Props<ProcessPostAutoApprovalActor>()
+                    .WithSupervisorStrategy(defaultStrategy);
+                
+                var processPostAutoApprovalActor =
+                    system.ActorOf(processPostAutoApprovalActorProps, nameof(ProcessPostAutoApprovalActor));
+                registry.Register<ProcessPostAutoApprovalActor>(processPostAutoApprovalActor);
 
                 system.RegisterPipelineSdkActors(registry, resolver);
             });

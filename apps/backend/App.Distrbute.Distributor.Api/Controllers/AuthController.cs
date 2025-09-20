@@ -11,7 +11,7 @@ public class AuthController : AuthControllerBase
     {
     }
 
-    public override string TokenPath()
+    protected override string TokenPath()
     {
         return "/api/distributor";
     }

@@ -18,6 +18,7 @@ public class CommonConstants
     public static class AuthScheme
     {
         public const string BEARER = "Bearer";
+        public const string BASIC = "Basic";
     }
 
     public static class RedisKeys

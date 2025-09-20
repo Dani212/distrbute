@@ -19,13 +19,13 @@ var config = builder.Configuration;
 
 services.AddDistributorServices(config);
 services.AddDistributorSdks(config);
+services.AddPriceConfig(config);
 
 services.AddPersistenceSdk<ApplicationDbContext>(config);
 
 services.AddValidatorsFromAssemblyContaining<Program>();
-services.AddFluentValidationAutoValidation();
 
-services.AddBearerAuthAndOAuth(config);
+services.AddBearerWithBasicAuthAndOAuth(config);
 
 services.AddSwaggerGen(config, CommonConstants.AuthScheme.BEARER);
 

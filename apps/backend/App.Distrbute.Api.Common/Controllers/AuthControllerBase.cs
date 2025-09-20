@@ -82,5 +82,5 @@ public abstract class AuthControllerBase : CustomControllerBase
         return ToActionResult(response);
     }
 
-    public abstract string TokenPath();
+    protected abstract string TokenPath();
 }

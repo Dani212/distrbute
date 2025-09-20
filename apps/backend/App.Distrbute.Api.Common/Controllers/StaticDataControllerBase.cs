@@ -1,35 +1,42 @@
 using App.Distrbute.Api.Common.Extensions;
-using App.Distrbute.Common;
+using App.Distrbute.Common.Dtos;
 using App.Distrbute.Common.Enums;
-using Microsoft.AspNetCore.Authorization;
+using App.Distrbute.Common.Models;
+using Mapster;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Paystack.Sdk.Enums;
+using Persistence.Sdk.Core.Interfaces;
 using Socials.Sdk.Enums;
 using Swashbuckle.AspNetCore.Annotations;
 using Utility.Sdk.Dtos;
 
 namespace App.Distrbute.Api.Common.Controllers;
 
-[ApiController]
-[Authorize(AuthenticationSchemes = CommonConstants.AuthScheme.BEARER)]
-public class StaticDataController : CustomControllerBase
+public class StaticDataControllerBase : CustomControllerBase
 {
+    private readonly IDbRepository _dbRepository;
+
+    public StaticDataControllerBase(IDbRepository dbRepository)
+    {
+        _dbRepository = dbRepository;
+    }
+    
     [HttpGet("niches")]
     [SwaggerOperation(
         Summary = "Get all instances of existing resource that matches filter"
     )]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IApiResponse<List<BrandNiche>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IApiResponse<List<NicheDto>>))]
     public async Task<IActionResult> AllNiches()
     {
         User.GetAccount(); // ensure authenticated 
-        
-        var response = Enum.GetValues(typeof(BrandNiche))
-            .Cast<BrandNiche>()
-            .Where(t => t != BrandNiche.Default)
-            .ToList().ToOkApiResponse();
 
-        await Task.CompletedTask;
+        var niches = await _dbRepository.GetManyAsync<BrandNiche>(q => q
+            .Where(e => true));
+        
+        var adapted = niches.Select(e => e.Adapt<NicheDto>()).ToList();
+
+        var response = adapted.ToOkApiResponse();
         return ToActionResult(response);
     }
     
@@ -37,17 +44,17 @@ public class StaticDataController : CustomControllerBase
     [SwaggerOperation(
         Summary = "Get all instances of existing resource that matches filter"
     )]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IApiResponse<List<BrandNiche>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IApiResponse<List<NicheDto>>))]
     public async Task<IActionResult> AllDistributorNiches()
     {
         User.GetAccount(); // ensure authenticated 
         
-        var response = Enum.GetValues(typeof(DistributorNiche))
-            .Cast<DistributorNiche>()
-            .Where(t => t != DistributorNiche.Default)
-            .ToList().ToOkApiResponse();
+        var niches = await _dbRepository.GetManyAsync<DistributorNiche>(q => q
+            .Where(e => true));
+        
+        var adapted = niches.Select(e => e.Adapt<NicheDto>()).ToList();
 
-        await Task.CompletedTask;
+        var response = adapted.ToOkApiResponse();
         return ToActionResult(response);
     }
 
