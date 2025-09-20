@@ -6,14 +6,13 @@ using Paystack.Sdk;
 
 namespace App.Distrbute.Api.Common.Controllers;
 
-[ApiController]
 [ApiExplorerSettings(IgnoreApi = true)]
-public class WebhooksController : CustomControllerBase
+public class WebhooksControllerBase : CustomControllerBase
 {
-    private readonly ICoolLogger<WebhooksController> _logger;
+    private readonly ICoolLogger<WebhooksControllerBase> _logger;
     private readonly IPipelineProvider _pipelineProvider;
 
-    public WebhooksController(IPipelineProvider pipelineProvider, ICoolLogger<WebhooksController> logger)
+    public WebhooksControllerBase(IPipelineProvider pipelineProvider, ICoolLogger<WebhooksControllerBase> logger)
     {
         _pipelineProvider = pipelineProvider;
         _logger = logger;

@@ -47,11 +47,11 @@ public class DepositToWalletService : IDepositToWalletService
 
         var transaction = await _dbRepository
             .GetAsync<DistrbuteTransaction>(b => b
-                .IncludeWith(e => e.Brand, p => p.Email)
+                .IncludeWith(e => e.Brand, e => e.Email)
                 .IncludeWith(e => e.Distributor, p => p.Email)
                 .Where(e => e.ClientReference == clientReference));
 
-        // ALWAYS do this adaption after all your functional logic
+        // ALWAYS do this adaption after all functional logic
         var resp = context.Adapt<RetrievedTransaction>();
         resp.PlatformTransaction = transaction;
 
@@ -73,7 +73,7 @@ public class DepositToWalletService : IDepositToWalletService
         if (!verifiedPaystackTransactionResponse.WasSuccessful)
             throw new BadRequest("Paystack transaction could not be verified.");
 
-        // ALWAYS do this adaption after all your functional logic
+        // ALWAYS do this adaption after all functional logic
         var resp = context.Adapt<VerifiedTransaction>();
         resp.PaystackTransaction = verifiedPaystackTransactionResponse.Data!;
 
@@ -95,11 +95,9 @@ public class DepositToWalletService : IDepositToWalletService
             transaction.PaymentProcessorClientReference = $"{verifiedPaystackTransaction.Id}";
             transaction.PaymentProcessorDescription = verifiedPaystackTransaction.GatewayResponse;
             transaction.PaymentProcessor = PaymentProcessor.PayStack;
-            transaction.Source = new Depository();
 
             var paystackAuthInfo = verifiedPaystackTransaction.Authorization;
             transaction.Source.WalletAccountNumber = GetAccountNumber(paystackAuthInfo);
-            transaction.Source.WalletProductId = transaction.LedgerProductId!.Value;
             transaction.Source.WalletType = paystackAuthInfo.Channel;
             transaction.Source.WalletProvider = paystackAuthInfo.Brand;
             transaction.Source.WalletAuthorizationCode = paystackAuthInfo.AuthorizationCode;
@@ -154,25 +152,22 @@ public class DepositToWalletService : IDepositToWalletService
         lastStep = transaction.Steps.LastOrDefault();
         if (lastStep?.Description is TransactionProcessingStep.RetrievingWalletFromDatabase)
         {
-            var email = GetTransactionEmail(transaction);
             string actioningEntityId = transaction.Brand?.Id ?? transaction.Distributor!.Id;
 
             existingWallet = await _dbRepository.GetAsync<Wallet>(b => b
-                .Include(e => e.Email)
-                .Where(e => e.Email.Address == email.Address &&
+                .Where(e =>
                             (transaction.Brand == null ||
                              transaction.Brand.Id == actioningEntityId) && // brand topping up
                             (transaction.Distributor == null ||
                              transaction.Distributor.Id == actioningEntityId) && // distributor topping up
-                            e.AccountNumber.Equals(transaction.Source!.WalletAccountNumber) &&
+                            e.AccountNumber.Equals(transaction.Source.WalletAccountNumber) &&
                             e.Active))
                 .IgnoreAndDefault<NotFound, Wallet>();
 
             if (existingWallet != null)
             {
-                transaction.Source!.Id = existingWallet.Id;
+                transaction.Source.Id = existingWallet.Id;
                 transaction.Source.WalletAccountId = existingWallet.AccountId;
-                transaction.LedgerAccountId = transaction.Source.WalletAccountId;
                 transaction.Source.WalletRecipientCode = existingWallet.RecipientCode!;
                 transaction.Source.WalletProviderLogoUrl = existingWallet.ProviderLogoUrl;
 
@@ -185,13 +180,11 @@ public class DepositToWalletService : IDepositToWalletService
         else
         {
             existingWallet = new Wallet();
-            var email = GetTransactionEmail(transaction);
-            existingWallet.Email = email;
             existingWallet.Brand = transaction.Brand;
             existingWallet.Distributor = transaction.Distributor;
-            existingWallet.ProductId = transaction.LedgerProductId!.Value;
-
-            existingWallet.AccountId = transaction.Source!.WalletAccountId;
+            existingWallet.ProductId = transaction.Source.WalletProductId;
+            existingWallet.ClientId = transaction.Source.WalletClientId;
+            existingWallet.AccountId = transaction.Source.WalletAccountId;
             existingWallet.AccountNumber = GetAccountNumber(paystackAuthInfo);
             var accountName = GetTransactionAccountNumber(transaction);
             existingWallet.AccountName = accountName;
@@ -201,7 +194,7 @@ public class DepositToWalletService : IDepositToWalletService
             existingWallet.RecipientCode = transaction.Source.WalletRecipientCode;
         }
 
-        // ALWAYS do this adaption after all your functional logic
+        // ALWAYS do this adaption after all functional logic
         var transactionWithExistingWallet = context.Adapt<VerifiedTransactionWithOptionalWallet>();
         transactionWithExistingWallet.Wallet = existingWallet;
 
@@ -235,10 +228,10 @@ public class DepositToWalletService : IDepositToWalletService
 
         // create a wallet on ledger
         var payload = new CreateWalletRequest();
-        payload.ClientId = transaction.LedgerClientId!.Value;
-        payload.SavingsProductId = transaction.LedgerProductId!.Value;
+        payload.ClientId = transaction.Source.WalletClientId;
+        payload.SavingsProductId =  transaction.Source.WalletProductId;
 
-        // ALWAYS do this adaption after all your functional logic
+        // ALWAYS do this adaption after all functional logic
         var resp = context.Adapt<CreateLedgerAccount>();
         resp.LedgerReq = payload;
 
@@ -261,8 +254,7 @@ public class DepositToWalletService : IDepositToWalletService
                 .CatchAndThrowAsOrReturn<LedgerException, FailedDependency, BaseFineractResponseDto>
                     ("We're having trouble saving your wallet information. Please try again in a few minutes.");
 
-            transaction.Source!.WalletAccountId = value.SavingsId;
-            transaction.LedgerAccountId = value.SavingsId;
+            transaction.Source.WalletAccountId = value.SavingsId;
 
             AddTransactionStep(context,
                 lastStep.Description,
@@ -272,10 +264,10 @@ public class DepositToWalletService : IDepositToWalletService
         else
         {
             value = new BaseFineractResponseDto();
-            value.SavingsId = transaction.Source!.WalletAccountId;
+            value.SavingsId = transaction.Source.WalletAccountId;
         }
 
-        // ALWAYS do this adaption after all your functional logic
+        // ALWAYS do this adaption after all functional logic
         var resp = context.Adapt<CreatedLedgerAccount>();
         resp.LedgerRes = value;
 
@@ -303,7 +295,7 @@ public class DepositToWalletService : IDepositToWalletService
         payload.Name = accountName;
         payload.AuthorizationCode = paystackTransaction.Authorization.AuthorizationCode;
 
-        // ALWAYS do this adaption after all your functional logic
+        // ALWAYS do this adaption after all functional logic
         var resp = context.Adapt<CreateTransferRecipientReq>();
         resp.TransferRecipientReq = payload;
 
@@ -324,7 +316,7 @@ public class DepositToWalletService : IDepositToWalletService
             var transferRecipientResponse = await _payStackSdk.CreateTransferRecipient(transferRecipientReq);
             value = transferRecipientResponse.Data;
 
-            transaction.Source!.WalletRecipientCode = value.RecipientCode;
+            transaction.Source.WalletRecipientCode = value.RecipientCode;
 
             AddTransactionStep(context,
                 lastStep.Description,
@@ -334,10 +326,10 @@ public class DepositToWalletService : IDepositToWalletService
         else
         {
             value = new TransferRecipient();
-            value.RecipientCode = transaction.Source!.WalletRecipientCode;
+            value.RecipientCode = transaction.Source.WalletRecipientCode;
         }
 
-        // ALWAYS do this adaption after all your functional logic
+        // ALWAYS do this adaption after all functional logic
         var resp = context.Adapt<CreatedTransferRecipient>();
         resp.TransferRecipientRes = value;
 
@@ -357,12 +349,10 @@ public class DepositToWalletService : IDepositToWalletService
                 TransactionProcessingStep.CreatingNewWalletInDb);
 
         var wallet = new Wallet();
-        var email = GetTransactionEmail(transaction);
-        wallet.Email = email;
         wallet.Brand = transaction.Brand;
         wallet.Distributor = transaction.Distributor;
-        wallet.ProductId = transaction.LedgerProductId!.Value;
-
+        wallet.ProductId = transaction.Source.WalletProductId;
+        wallet.ClientId = transaction.Source.WalletClientId;
         wallet.AccountId = context.LedgerRes.SavingsId;
         wallet.AccountNumber = GetAccountNumber(paystackAuthInfo);
         var accountName = GetTransactionAccountNumber(transaction);
@@ -374,7 +364,7 @@ public class DepositToWalletService : IDepositToWalletService
         wallet.Verified = true;
         wallet.Active = true;
 
-        // ALWAYS do this adaption after all your functional logic
+        // ALWAYS do this adaption after all functional logic
         var resp = context.Adapt<CreateWalletReq>();
         resp.WalletReq = wallet;
 
@@ -394,7 +384,7 @@ public class DepositToWalletService : IDepositToWalletService
         {
             savedWallet = await _dbRepository.AddAsync(req);
 
-            transaction.Source!.Id = req.Id;
+            transaction.Source.Id = req.Id;
             transaction.Source.WalletProviderLogoUrl = req.ProviderLogoUrl;
 
             AddTransactionStep(context,
@@ -405,14 +395,12 @@ public class DepositToWalletService : IDepositToWalletService
         else
         {
             savedWallet = new Wallet();
-            savedWallet.Id = transaction.Source!.Id;
-            var email = GetTransactionEmail(transaction);
-            savedWallet.Email = email;
+            savedWallet.Id = transaction.Source.Id;
             savedWallet.Brand = transaction.Brand;
             savedWallet.Distributor = transaction.Distributor;
-            savedWallet.ProductId = transaction.LedgerProductId!.Value;
-
-            savedWallet.AccountId = transaction.Source!.WalletAccountId;
+            savedWallet.ProductId = transaction.Source.WalletProductId;
+            savedWallet.ClientId = transaction.Source.WalletClientId;
+            savedWallet.AccountId = transaction.Source.WalletAccountId;
             savedWallet.AccountNumber = GetAccountNumber(paystackAuthInfo);
             var accountName = GetTransactionAccountNumber(transaction);
             savedWallet.AccountName = accountName;
@@ -423,7 +411,7 @@ public class DepositToWalletService : IDepositToWalletService
             savedWallet.ProviderLogoUrl = transaction.Source.WalletProviderLogoUrl;
         }
 
-        // ALWAYS do this adaption after all your functional logic
+        // ALWAYS do this adaption after all functional logic
         var resp = context.Adapt<VerifiedTransactionWithResolvedWallet>();
         resp.Wallet = savedWallet;
 
@@ -471,15 +459,15 @@ public class DepositToWalletService : IDepositToWalletService
             
             var suspenseWallet = await _dbRepository
                 .GetAsync<SuspenseWallet>(q => q
-                    .Include(e => e.Email)
-                    .Where(e => e.Email.Address == email.Address)
+                    .IncludeWith(e => e.Distributor, e => e.Email)
+                    .Where(e => e.Distributor.Email.Address == email.Address)
                     .Include(e => e.Distributor)
                     .Where(e => e.Distributor.Id == transaction.Distributor.Id));
 
             depositReq.AccountId = suspenseWallet.AccountId;
         }
 
-        // ALWAYS do this adaption after all your functional logic
+        // ALWAYS do this adaption after all functional logic
         var resp = context.Adapt<DepositLedgerAccountReq>();
         resp.DepositReq = depositReq;
 
@@ -494,7 +482,8 @@ public class DepositToWalletService : IDepositToWalletService
 
         var lastStep = transaction.Steps.LastOrDefault();
         var shouldExecute = lastStep?.Description is TransactionProcessingStep.DepositingToWallet &&
-                            transaction.TransactionStatus == TransactionStatus.LockedForDeposit;
+                            transaction.TransactionStatus == TransactionStatus.LockedForDeposit &&
+                            transaction.LedgerActionId == null;
         if (shouldExecute)
             try
             {
@@ -506,7 +495,7 @@ public class DepositToWalletService : IDepositToWalletService
                     lastStep!.Description,
                     TransactionProcessingStep.DepositedToWallet);
 
-                // ALWAYS do this adaption after all your functional logic
+                // ALWAYS do this adaption after all functional logic
                 var resp = context.Adapt<DepositedLedgerAccount>();
                 resp.DepositRes = depositResp;
 
@@ -516,7 +505,7 @@ public class DepositToWalletService : IDepositToWalletService
             {
             }
 
-        // ALWAYS do this adaption after all your functional logic
+        // ALWAYS do this adaption after all functional logic
         var default_ = context.Adapt<DepositedLedgerAccount>();
         return default_;
     }
@@ -560,8 +549,8 @@ public class DepositToWalletService : IDepositToWalletService
         resp.Amount = transaction.Amount.GetValueOrDefault(0);
         resp.TransactionStatus = transaction.TransactionStatus;
         resp.ClientReference = transaction.ClientReference;
-        resp.AccountId = transaction.LedgerAccountId;
-        resp.ProductId = transaction.LedgerProductId;
+        resp.AccountId = transaction.Source.WalletAccountId;
+        resp.ProductId = transaction.Source.WalletProductId;
 
         return resp;
     }
