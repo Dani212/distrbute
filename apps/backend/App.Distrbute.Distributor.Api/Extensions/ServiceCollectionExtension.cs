@@ -12,6 +12,7 @@ using App.Distrbute.Api.Common.Options;
 using App.Distrbute.Api.Common.Services.Interfaces;
 using App.Distrbute.Api.Common.Services.Providers;
 using App.Distrbute.Common;
+using App.Distrbute.Common.Options;
 using App.Distrbute.Distributor.Api.Services.Interfaces;
 using App.Distrbute.Distributor.Api.Services.Providers;
 using DataProtection.Sdk.Extensions;
@@ -121,6 +122,8 @@ public static class ServiceCollectionExtension
             configuration.GetRequiredSection(nameof(SavingsProductConfig)).Bind(c));
         services.Configure<MailTemplateConfig>(c =>
             configuration.GetRequiredSection(nameof(MailTemplateConfig)).Bind(c));
+        services.Configure<EncryptionConfig>(c =>
+            configuration.GetRequiredSection(nameof(EncryptionConfig)).Bind(c));
         
         // for handling oauth
         services.AddLoggedScopedService<IOauthAccountHandler, SocialAccountService>();
@@ -129,6 +132,7 @@ public static class ServiceCollectionExtension
         services.AddLoggedScopedService<IDepositToWalletService, DepositToWalletService>();
         services.AddLoggedScopedService<IDistributorNicheService, DistributorNicheService>();
         services.AddLoggedScopedService<IDistributorService, DistributorService>();
+        services.AddLoggedScopedService<IFileUploadService, FileUploadService>();
         services.AddLoggedScopedService<IJobSchedulingService, JobSchedulingService>();
         services.AddLoggedScopedService<IPayoutService, PayoutService>();
         services.AddLoggedScopedService<IPipelineProvider, PipelineProvider>();

@@ -1,9 +1,9 @@
 using App.Distrbute.Api.Common.Extensions;
+using App.Distrbute.Api.Common.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ObjectStorage.Sdk.Dtos;
 using ObjectStorage.Sdk.Extensions;
-using ObjectStorage.Sdk.Services.Interfaces;
 using Swashbuckle.AspNetCore.Annotations;
 using Utility.Sdk.Dtos;
 using CommonConstants = ObjectStorage.Sdk.CommonConstants;
@@ -12,9 +12,9 @@ namespace App.Distrbute.Api.Common.Controllers;
 
 public class BaseBrandDistributorController : CustomControllerBase
 {
-    private readonly IObjectStorageService _fileService;
+    private readonly IFileUploadService _fileService;
 
-    public BaseBrandDistributorController(IObjectStorageService fileService)
+    public BaseBrandDistributorController(IFileUploadService fileService)
     {
         _fileService = fileService;
     }
@@ -33,14 +33,8 @@ public class BaseBrandDistributorController : CustomControllerBase
         var cancellationToken = HttpContext.RequestAborted;
         var metadata = await HttpContext.Request.ReadMultipartMetadata(cancellationToken);
 
-        var req = new ObjectStoreReq();
-        req.SupportedFormats = CommonConstants.IMAGE_MEDIA_TYPES;
-        req.MaxSize = CommonConstants.TWENTY_MB;
-        req.ValidateOwnership = false;
-        req.OwnerId = user.Address;
-        req.PathPrefix = Distrbute.Common.CommonConstants.PROFILE_PICTURE_STORAGE_PREFIX;
-        var presignedUploadUrlResp = await _fileService.GeneratePresignedUploadUrlAsync<DocumentFile>(req, metadata);
+        var resp = await _fileService.UploadProfilePicture(user, metadata);
 
-        return ToActionResult(presignedUploadUrlResp.ToOkApiResponse());
+        return ToActionResult(resp.ToOkApiResponse());
     }
 }

@@ -3,13 +3,13 @@ using App.Distrbute.Api.Common.Controllers;
 using App.Distrbute.Api.Common.Dtos;
 using App.Distrbute.Api.Common.Dtos.Distributor;
 using App.Distrbute.Api.Common.Extensions;
+using App.Distrbute.Api.Common.Services.Interfaces;
 using App.Distrbute.Common;
 using App.Distrbute.Common.Dtos;
 using App.Distrbute.Distributor.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using ObjectStorage.Sdk.Services.Interfaces;
 using Paystack.Sdk.Dtos;
 using Persistence.Sdk.Dtos;
 using Swashbuckle.AspNetCore.Annotations;
@@ -24,7 +24,7 @@ public class DistributorController : BaseBrandDistributorController
 {
     private readonly IDistributorService _distributorService;
 
-    public DistributorController(IDistributorService distributorService, IObjectStorageService fileService) :
+    public DistributorController(IDistributorService distributorService, IFileUploadService fileService) :
         base(fileService)
     {
         _distributorService = distributorService;
