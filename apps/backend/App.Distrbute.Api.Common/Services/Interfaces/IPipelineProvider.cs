@@ -11,4 +11,5 @@ public interface IPipelineProvider
     Task ExecuteInitSocialAccountValuePipeline(string socialAccountId);
     Pipeline.Sdk.Core.Pipeline DepositProcessingPipeline();
     Task<CheckStatusResponse> ExecuteDepositProcessingPipeline(string clientReference);
+    Task<PayoutTaskResponse> ExecutePayoutProcessingPipeline(string postId);
 }
