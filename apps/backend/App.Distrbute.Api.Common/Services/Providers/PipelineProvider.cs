@@ -16,6 +16,7 @@ namespace App.Distrbute.Api.Common.Services.Providers;
 public class PipelineProvider : IPipelineProvider
 {
     private readonly IDepositToWalletService _depositService;
+    private readonly IPayoutService _payoutService;
     private readonly IFileUploader _fileUploader;
     private readonly IMediaProcessor _mediaProcessor;
     private readonly IRequiredActor<RunPipelineActor> _pipelineActor;
@@ -34,7 +35,8 @@ public class PipelineProvider : IPipelineProvider
         // IPostEngagementTrackingService postEngagementTrackingService,
         // ISocialAccountValuationService socialAccountValuationService,
         // ISocialAccountValuationWriter socialAccountValuationWriter,
-        IDepositToWalletService depositService
+        IDepositToWalletService depositService,
+        IPayoutService payoutService
         )
     {
         _pipelineFactory = pipelineFactory;
@@ -46,6 +48,7 @@ public class PipelineProvider : IPipelineProvider
         // _socialAccountValuationService = socialAccountValuationService;
         // _socialAccountValuationWriter = socialAccountValuationWriter;
         _depositService = depositService;
+        _payoutService = payoutService;
     }
 
     public async Task ExecuteMediaProcessingPipeline(Email principal, MediaProcessingReq req, string prefix)
@@ -285,6 +288,145 @@ public class PipelineProvider : IPipelineProvider
             )
             .Build();
         
+        return pipeline;
+    }
+    
+    
+    // DISTRIBUTOR PAYOUTS
+    public Pipeline.Sdk.Core.Pipeline PayoutProcessingPipeline()
+    {
+        var initializationPipeline = _pipelineFactory
+            .CreateBuilder()
+            .AddStage<PayoutProcessingContext, RetrievedPost>(
+                "Load post from platform storage (using post ID)",
+                _payoutService.RetrievePostAsync
+            )
+            .AddStage<RetrievedPost, InitializedPost>(
+                "Initialize post for payout processing (claim and lock)",
+                _payoutService.InitializePostForProcessingAsync
+            )
+            .AddStage<PostWithCampaign, PostWithTransaction>(
+                "Retrieve or create transaction record for this payout",
+                _payoutService. RetrieveOrCreateTransactionAsync
+            )
+            .AddStage<PostWithTransaction>(
+                "Persist transaction state for durability",
+                _payoutService. SaveTransactionAsync
+            )
+            .Build();
+
+        var walletResolutionPipeline = _pipelineFactory
+            .CreateBuilder()
+            .AddStage<PostWithTransaction, PostWithResolvedWallets>(
+                "Resolve destination (suspense) wallet for distributor",
+                _payoutService.ResolveWalletsAsync
+            )
+            .AddStage<PostWithResolvedWallets>(
+                "Persist wallet details on transaction",
+                _payoutService.SaveTransactionAsync
+            )
+            .AddStage<PostWithResolvedWallets>(
+                "Create transfer lock (prevent race conditions)",
+                _payoutService.CreateDepositLockRequest
+            )
+            .AddStage<PostWithResolvedWallets>(
+                "Persist transfer lock state (critical save point)",
+                _payoutService.SaveTransactionAsync
+            )
+            .Build();
+
+        var transferExecutionPipeline = _pipelineFactory
+            .CreateBuilder()
+            .AddStage<PostWithResolvedWallets, PostWithTransferRequest>(
+                "Construct ledger transfer request payload",
+                _payoutService.CreateTransferRequest
+            )
+            .AddStage<PostWithTransferRequest>(
+                "Persist transfer request details",
+                _payoutService.SaveTransactionAsync
+            )
+            .AddStage<PostWithTransferRequest, ExecutedTransfer>(
+                "Execute actual funds transfer via ledger (idempotent critical step)",
+                _payoutService.ExecuteTransferAsync
+            )
+            .AddStage<ExecutedTransfer>(
+                "Persist transfer results on transaction and post",
+                _payoutService.SaveTransactionAsync
+            )
+            .AddStage<ExecutedTransfer>(
+                "Determine final transaction state based on transfer result",
+                _payoutService.DetermineFinalTransactionState
+            )
+            .AddStage<ExecutedTransfer>(
+                "Persist final transaction state",
+                _payoutService.SaveTransactionAsync
+            )
+            .AddStage<ExecutedTransfer, CompletedPayout>(
+                "Send payment notification email to distributor",
+                _payoutService.SendPaymentNotificationAsync
+            )
+            .Build();
+
+        var mainPipeline = _pipelineFactory
+            .CreateBuilder()
+            .AddStage<PayoutProcessingContext, PostWithTransaction>(
+                "Run initialization pipeline (post retrieval + campaign validation + transaction setup)",
+                initializationPipeline.ExecuteReturningAsync<PostWithTransaction>
+            )
+            .AddStage<PostWithTransaction, PostWithResolvedWallets>(
+                "Run wallet resolution pipeline (destination wallet + deposit lock)",
+                walletResolutionPipeline.ExecuteReturningAsync<PostWithResolvedWallets>
+            )
+            .AddStage<PostWithResolvedWallets, CompletedPayout>(
+                "Run transfer execution pipeline (ledger transfer + finalization)",
+                transferExecutionPipeline.ExecuteReturningAsync<CompletedPayout>
+            )
+            .Build();
+
+        return mainPipeline;
+    }
+
+    public async Task<PayoutTaskResponse> ExecutePayoutProcessingPipeline(string postId)
+    {
+        var processingContext = new PayoutProcessingContext();
+        processingContext.PostId = postId;
+
+        var statusPipeline = PayoutStatusPipeline();
+        var checkStatus = await statusPipeline
+            .ExecuteReturningAsync<PayoutTaskResponse>(processingContext);
+
+        var needsProcessing = !checkStatus.Successful && checkStatus.Retry;
+        if (needsProcessing)
+        {
+            var pipeline = PayoutProcessingPipeline();
+
+            var runnerMessage = new PipelineInitMessage(processingContext, pipeline);
+
+            // payout processing pipeline should ALWAYS run in an actor to ensure no race conditions
+            var actor = await _pipelineActor.GetAsync();
+            actor.Tell(runnerMessage);
+        }
+
+        return checkStatus;
+    }
+
+    private Pipeline.Sdk.Core.Pipeline PayoutStatusPipeline()
+    {
+        var pipeline = _pipelineFactory.CreateBuilder()
+            .AddStage<PayoutProcessingContext, RetrievedPost>(
+                "Load post from platform storage (check processing eligibility)",
+                _payoutService.RetrievePostAsync
+            )
+            .AddStage<RetrievedPost, InitializedPost>(
+                "Initialize post processing state",
+                _payoutService. InitializePostForProcessingAsync
+            )
+            .AddStage<InitializedPost, PayoutTaskResponse>(
+                "Check if payout already processed (prevents re-execution)",
+                _payoutService.CheckStatus
+            )
+            .Build();
+
         return pipeline;
     }
 }

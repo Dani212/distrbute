@@ -38,8 +38,8 @@ public class WalletService : IWalletService
         else
             wallet = await _repository.GetAsync<Wallet>(q => q
                 .Where(e => e.Distributor != null)
-                .Include(e => e.Email)
-                .Where(e => e.Email.Address == principal.Address && e.Id == id && e.Active));
+                .IncludeWith(e => e.Distributor, e => e.Email)
+                .Where(e => e.Distributor!.Email.Address == principal.Address && e.Id == id && e.Active));
 
         var ledgerBalance = await _walletSdk
             .GetBalanceAsync(wallet.AccountId)
@@ -64,10 +64,9 @@ public class WalletService : IWalletService
             var brandWhereOwnsOrManager = await GetBrandWhereOwnsOrManages(principal, filter.TenantId);
         
             paged = await _repository.GetAllAsync<Wallet>(q => q
-                .Include(e => e.Brand)
+                .IncludeWith(e => e.Brand, e => e.Email)
                 .Where(e => e.Brand != null && e.Brand!.Id == brandWhereOwnsOrManager.Id)
-                .Include(e => e.Email)
-                .Where(e => e.Email.Address == principal.Address)
+                .Where(e => e.Brand!.Email.Address == principal.Address)
                 .Where(e => (filter.Type == null || e.Type == filter.Type) &&
                             (filter.Provider == null || e.Provider == filter.Provider && e.Active))
                 .Page(filter));
@@ -77,8 +76,8 @@ public class WalletService : IWalletService
             paged = await _repository.GetAllAsync<Wallet>(
                 q => q
                     .Where(e => e.Distributor != null)
-                    .Include(e => e.Email)
-                    .Where(e => e.Email.Address == principal.Address)
+                    .IncludeWith(e => e.Distributor, e => e.Email)
+                    .Where(e => e.Distributor!.Email.Address == principal.Address)
                     .Where(e => (filter.Type == null || e.Type == filter.Type) &&
                                 (filter.Provider == null || e.Provider == filter.Provider && e.Active))
                     .Page(filter)

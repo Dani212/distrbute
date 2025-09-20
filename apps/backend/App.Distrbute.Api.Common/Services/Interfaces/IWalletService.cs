@@ -1,5 +1,4 @@
 using App.Distrbute.Api.Common.Dtos;
-using App.Distrbute.Api.Common.Dtos.Wallet;
 using App.Distrbute.Common.Dtos;
 using App.Distrbute.Common.Models;
 using Persistence.Sdk.Dtos;
