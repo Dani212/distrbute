@@ -1,4 +1,4 @@
-import { FetchError } from "./fetch-error";
+import { FetchError } from "@distrbute/next-shared";
 import { HTTP_METHODS } from "@/lib/constants/http";
 
 export async function fetchWrapper<T>(

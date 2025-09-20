@@ -5,8 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { Button } from "@distrbute/next-shared";
-import { AuthApi, type VerifyOtpRequest } from "@/lib/api/auth";
+import { Button, extractErrorMessage } from "@distrbute/next-shared";
+import { AuthApi } from "@/lib/api/auth";
 import { STORAGE_KEYS, type OtpData } from "@/lib/constants/storage";
 import { ROUTES } from "@/lib/constants/routes";
 import { toast } from "sonner";
@@ -22,7 +22,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import {
@@ -31,6 +30,8 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { signIn } from "next-auth/react";
+import { AUTH } from "@/lib/constants/auth";
 
 const otpSchema = z.object({
   otp: z
@@ -93,32 +94,25 @@ export default function OtpPage() {
     }
 
     setIsLoading(true);
-
-    const verifyRequest: VerifyOtpRequest = {
+    // Sign in with NextAuth using OTP credentials
+    signIn(AUTH.PROVIDERS.OTP, {
+      email: otpData.email,
+      otpCode: data.otp,
       verificationId: otpData.verificationId,
       requestId: otpData.requestId,
       otpPrefix: otpData.otpPrefix,
-      otpCode: data.otp,
-      email: otpData.email,
-    };
-
-    AuthApi.verifyOtp(verifyRequest)
-      .then((response) => {
-        if (response.code === 200) {
-          toast.success("OTP verified successfully!");
-          // Clear the OTP data from sessionStorage
-          sessionStorage.removeItem(STORAGE_KEYS.OTP_DATA);
-          // TODO: Store auth token and redirect to dashboard
-          console.log("Verification successful:", response.data);
-          // For now, redirect to home page
-          router.push(ROUTES.HOME);
-        } else {
-          toast.error(response.message || "OTP verification failed");
-        }
+      redirect: false,
+    })
+      .then((result) => {
+        toast.success("OTP verified successfully!");
+        // Clear the OTP data from sessionStorage
+        sessionStorage.removeItem(STORAGE_KEYS.OTP_DATA);
+        // Redirect to dashboard on successful authentication
+        router.push(ROUTES.DASHBOARD.ROOT);
       })
       .catch((error) => {
-        console.error("OTP verification error:", error);
-        toast.error("Failed to verify OTP. Please try again.");
+        console.error("Sign in error:", error);
+        toast.error(extractErrorMessage(error));
       })
       .finally(() => {
         setIsLoading(false);
@@ -167,7 +161,7 @@ export default function OtpPage() {
       })
       .catch((error) => {
         console.error("Resend OTP error:", error);
-        toast.error("Failed to resend OTP. Please try again.");
+        toast.error(extractErrorMessage(error));
       })
       .finally(() => {
         setIsLoading(false);
@@ -229,7 +223,7 @@ export default function OtpPage() {
                             <InputOTPGroup className="gap-2">
                               <InputOTPSlot
                                 index={0}
-                                className="w-12 h-12 border-slate-700 focus:border-slate-400 focus:ring-slate-400/20"
+                                className="w-12 h-12 border-slate-200 focus:border-slate-400 focus:ring-slate-400/20"
                               />
                               <InputOTPSlot
                                 index={1}
