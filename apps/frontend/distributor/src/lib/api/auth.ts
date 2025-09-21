@@ -1,6 +1,6 @@
 import { fetchWrapper } from "./fetch-wrapper";
 import { ROUTES } from "@/lib/constants/routes";
-import { HTTP_METHODS, CONTENT_TYPES } from "@/lib/constants/http";
+import { HTTP_METHODS, CONTENT_TYPES } from "@distrbute/next-shared";
 
 export interface SendOtpRequest {
   // Based on the curl command, it seems the body is empty or not specified.
@@ -39,6 +39,7 @@ export interface VerifyOtpApiResponse {
     token?: string;
     expirationMillis: number;
     email: string;
+    name: string;
   };
   errors: string | null;
 }

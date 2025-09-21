@@ -1,5 +1,4 @@
 import { NextAuthOptions } from "next-auth";
-import { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthApi } from "./api/auth";
 import { AUTH } from "./constants/auth";
@@ -34,7 +33,7 @@ export const authOptions: NextAuthOptions = {
             return {
               id: credentials.email,
               email: credentials.email,
-              name: credentials.email,
+              name: response.data.name || credentials.email,
               accessToken: response.data.token,
               expirationMillis: response.data.expirationMillis,
             };
@@ -48,18 +47,34 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === "update" && session) {
+        token.name = (session as any).name || token.name;
+        token.image = (session as any).image || token.image;
+      } else if (user) {
         token.accessToken = (user as any).accessToken;
         token.expirationMillis = (user as any).expirationMillis;
+        token.name = (user as any).name;
+        token.image = (user as any).image;
       }
+
       return token;
     },
     async session({ session, token }) {
-      if (token && session.user) {
+      if (token && session) {
         (session.user as any).id = token.sub || "";
         (session as any).accessToken = token.accessToken;
         (session as any).expirationMillis = token.expirationMillis;
+        (session as any).name = token.name;
+        (session as any).image = token.image;
+      }
+
+      if (session.user) {
+        (session.user as any).id = token.sub || "";
+        (session.user as any).accessToken = token.accessToken;
+        (session.user as any).expirationMillis = token.expirationMillis;
+        (session.user as any).name = token.name;
+        (session.user as any).image = token.image;
       }
       return session;
     },
