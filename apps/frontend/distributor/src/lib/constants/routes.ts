@@ -15,8 +15,9 @@ export const ROUTES = {
   // Dashboard routes (for future use)
   DASHBOARD: {
     ROOT: "/dashboard",
+    PROFILE: "/profile",
+    EDIT_PROFILE: "/profile/edit",
     // Add more dashboard routes as needed
-    // PROFILE: "/dashboard/profile",
     // SETTINGS: "/dashboard/settings",
   },
 
