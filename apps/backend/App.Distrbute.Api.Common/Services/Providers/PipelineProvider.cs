@@ -1,5 +1,6 @@
 using Akka.Actor;
 using Akka.Hosting;
+using App.Distrbute.Api.Common.Dtos.Post;
 using App.Distrbute.Api.Common.Dtos.Wallet;
 using App.Distrbute.Api.Common.Services.Interfaces;
 using App.Distrbute.Common.Models;
@@ -10,6 +11,7 @@ using ObjectStorage.Sdk.Services.Providers;
 using Pipeline.Sdk.Actors;
 using Pipeline.Sdk.Actors.ActorMessages;
 using Pipeline.Sdk.Core;
+using Socials.Sdk.Dtos;
 
 namespace App.Distrbute.Api.Common.Services.Providers;
 
@@ -21,9 +23,10 @@ public class PipelineProvider : IPipelineProvider
     private readonly IMediaProcessor _mediaProcessor;
     private readonly IRequiredActor<RunPipelineActor> _pipelineActor;
     private readonly IPipelineFactory _pipelineFactory;
-    // private readonly IPostEngagementTrackingService _postEngagementTrackingService;
-    // private readonly ISocialAccountValuationService _socialAccountValuationService;
-    // private readonly ISocialAccountValuationWriter _socialAccountValuationWriter;
+    private readonly IPostMetricService _postMetricService;
+    private readonly IPostValuationService _postValuationService;
+    private readonly IPostValuationWriter _postValuationWriter;
+    private readonly ISocialAccountValuationService _socialAccountValuationService;
     private readonly IUploadedFileFinalizer _uploadedFileFinalizer;
 
     public PipelineProvider(
@@ -32,9 +35,10 @@ public class PipelineProvider : IPipelineProvider
         IMediaProcessor processor,
         IFileUploader fileUploader,
         IUploadedFileFinalizer uploadedFileFinalizer,
-        // IPostEngagementTrackingService postEngagementTrackingService,
-        // ISocialAccountValuationService socialAccountValuationService,
-        // ISocialAccountValuationWriter socialAccountValuationWriter,
+        IPostMetricService postMetricService,
+        IPostValuationService postValuationService,
+        IPostValuationWriter postValuationWriter,
+        ISocialAccountValuationService socialAccountValuationService,
         IDepositToWalletService depositService,
         IPayoutService payoutService
         )
@@ -44,9 +48,10 @@ public class PipelineProvider : IPipelineProvider
         _mediaProcessor = processor;
         _fileUploader = fileUploader;
         _uploadedFileFinalizer = uploadedFileFinalizer;
-        // _postEngagementTrackingService = postEngagementTrackingService;
-        // _socialAccountValuationService = socialAccountValuationService;
-        // _socialAccountValuationWriter = socialAccountValuationWriter;
+        _postMetricService = postMetricService;
+        _postValuationService = postValuationService;
+        _postValuationWriter = postValuationWriter;
+        _socialAccountValuationService = socialAccountValuationService;
         _depositService = depositService;
         _payoutService = payoutService;
     }
@@ -87,42 +92,53 @@ public class PipelineProvider : IPipelineProvider
         actor.Tell(runnerMessage);
     }
 
-    public async Task ExecutePostTrackingPipeline(string postId)
+    public async Task ExecutePostTrackingPipeline(TrackOnePostReq req)
     {
-        throw new NotImplementedException();
+        var pipeline = _pipelineFactory
+            .CreateBuilder()
+            .AddStage<TrackOnePostReq, TrackedPost>("Gather post metrics", _postMetricService.GatherAsync)
+            .AddStage<TrackedPost, ValuedPost>("Calculate value of post",
+                _postValuationService.Value)
+            .AddStage<ValuedPost, SocialProfile>("Write value of post",
+                _postValuationWriter.WriteAsync)
+            .AddStage<SocialProfile, bool>("Value social account", _socialAccountValuationService.ValueAsync)
+            .Build();
         
-        // var pipeline = _pipelineFactory
-        //     .CreateBuilder()
-        //     .AddStage<string, TrackedPost>("Gather post metrics", _postEngagementTrackingService.TrackAsync)
-        //     .AddStage<TrackedPost, ValuedPost>("Calculate social account added value from post",
-        //         _socialAccountValuationService.Valuate)
-        //     .AddStage<ValuedPost, PostValuation>("Write new social account value",
-        //         _socialAccountValuationWriter.WriteAsync)
-        //     .Build();
-        //
-        // var runnerMessage = new PipelineInitMessage(postId, pipeline);
-        //
-        // var actor = await _pipelineActor.GetAsync();
-        // actor.Tell(runnerMessage);
+        var runnerMessage = new PipelineInitMessage(req, pipeline);
+        
+        var actor = await _pipelineActor.GetAsync();
+        actor.Tell(runnerMessage);
     }
 
-    public async Task ExecuteInitSocialAccountValuePipeline(string socialAccountId)
+    public async Task ExecuteInitSocialAccountValuePipeline<T>(T socialAccount) where T : SocialAccountBase
     {
-        throw new NotImplementedException();
+        var pipeline = _pipelineFactory
+            .CreateBuilder()
+            .AddStage<TrackPostBase, TrackedPosts>("Gather posts metrics", _postMetricService.GatherManyAsync)
+            .AddStage<TrackedPosts, ValuedPosts>("Calculate value of posts",
+                _postValuationService.ValueMany)
+            .AddStage<ValuedPosts, SocialProfile>("Write value of posts",
+                _postValuationWriter.WriteManyAsync)
+            .AddStage<SocialProfile, bool>("Value social account", _socialAccountValuationService.ValueAsync)
+            .Build();
         
-        // var pipeline = _pipelineFactory
-        //     .CreateBuilder()
-        //     .AddStage<string, TrackedPosts>("Gather posts metrics", _postEngagementTrackingService.TrackManyAsync)
-        //     .AddStage<TrackedPosts, ValuedPosts>("Calculate social account value from posts",
-        //         _socialAccountValuationService.Valuate)
-        //     .AddStage<ValuedPosts, List<PostValuation>>("Write new social account values",
-        //         _socialAccountValuationWriter.WriteAsync)
-        //     .Build();
-        //
-        // var runnerMessage = new PipelineInitMessage(socialAccountId, pipeline);
-        //
-        // var actor = await _pipelineActor.GetAsync();
-        // actor.Tell(runnerMessage);
+        var trackPostBase = new TrackPostBase();
+        if (socialAccount is DistributorSocialAccount distributorSocialAccount)
+        {
+            trackPostBase.DistributorSocialAccount = distributorSocialAccount;
+        }
+        if (socialAccount is BrandSocialAccount brandSocialAccount)
+        {
+            trackPostBase.BrandSocialAccount = brandSocialAccount;
+        }
+        
+        var socialProfile = socialAccount.AsSocialProfile();
+        trackPostBase.SocialProfile = socialProfile;
+        
+        var runnerMessage = new PipelineInitMessage(trackPostBase, pipeline);
+        
+        var actor = await _pipelineActor.GetAsync();
+        actor.Tell(runnerMessage);
     }
 
     public Pipeline.Sdk.Core.Pipeline DepositProcessingPipeline()

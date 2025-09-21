@@ -5,6 +5,7 @@ using App.Distrbute.Common;
 using App.Distrbute.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ObjectStorage.Sdk.Dtos;
@@ -15,9 +16,11 @@ using Socials.Sdk.Dtos;
 namespace App.Distrbute.Common.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250921092206_rename")]
+    partial class rename
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -748,6 +751,7 @@ namespace App.Distrbute.Common.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("BrandId")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("BrandSocialAccountId")
@@ -813,9 +817,6 @@ namespace App.Distrbute.Common.Migrations
 
                     b.HasIndex("DistributorSocialAccountId");
 
-                    b.HasIndex("ExternalPostId")
-                        .IsUnique();
-
                     b.HasIndex("PostValuationId");
 
                     b.ToTable("Posts");
@@ -844,8 +845,8 @@ namespace App.Distrbute.Common.Migrations
                     b.Property<double>("EngagementRate")
                         .HasColumnType("double precision");
 
-                    b.Property<long>("EstimatedConversions")
-                        .HasColumnType("bigint");
+                    b.Property<double>("EstimatedConversions")
+                        .HasColumnType("double precision");
 
                     b.Property<long>("FollowersCount")
                         .HasColumnType("bigint");
@@ -876,7 +877,7 @@ namespace App.Distrbute.Common.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PostValuations");
+                    b.ToTable("PostMetrics");
                 });
 
             modelBuilder.Entity("App.Distrbute.Common.Models.SuspenseWallet", b =>
@@ -1215,7 +1216,9 @@ namespace App.Distrbute.Common.Migrations
                 {
                     b.HasOne("App.Distrbute.Common.Models.Brand", "Brand")
                         .WithMany()
-                        .HasForeignKey("BrandId");
+                        .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("App.Distrbute.Common.Models.BrandSocialAccount", "BrandSocialAccount")
                         .WithMany()

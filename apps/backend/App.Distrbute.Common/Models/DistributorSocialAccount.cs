@@ -1,7 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using App.Distrbute.Common.Enums;
-using Persistence.Sdk.Models;
 using Socials.Sdk.Enums;
 
 namespace App.Distrbute.Common.Models;

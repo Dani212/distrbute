@@ -175,6 +175,9 @@ public static class ServiceCollectionExtension
         
         // Add Data Protection
         services.AddDataProtectionSdk<ApplicationDbContext>(configuration);
+        
+        // add post tracking services
+        services.AddPostTracking();
 
         return services;
     }

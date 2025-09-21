@@ -38,7 +38,7 @@ public class ApplicationDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<DistributorSocialAccount> DistributorSocialAccounts { get; set; }
     public DbSet<Email> Emails { get; set; }
     public DbSet<Post> Posts { get; set; }
-    public DbSet<PostMetric> PostMetrics { get; set; }
+    public DbSet<PostValuation> PostValuations { get; set; }
     public DbSet<SuspenseWallet> SuspenseWallets { get; set; }
     public DbSet<Wallet> Wallets { get; set; }
     
@@ -168,21 +168,27 @@ public class ApplicationDbContext : DbContext, IDataProtectionKeyContext
                 GetValueComparer<DistributorSocialAccount, List<ContentType>>(d => d.ExcludeFromContent));
         
         // post
-        modelBuilder.Entity<Post>()
-            .Property(e => e.PostStatus)
-            .HasConversion<string>();
-        
-        modelBuilder.Entity<Post>()
-            .Property(e => e.PostApprovalStatus)
-            .HasConversion<string>();
-        
-        modelBuilder.Entity<Post>()
-            .Property(e => e.PostPayoutStatus)
-            .HasConversion<string>();
-        
-        modelBuilder.Entity<Post>()
-            .Property(e => e.ContentType)
-            .HasConversion<string>();
+            // index
+            modelBuilder.Entity<Post>()
+                .HasIndex(e => e.ExternalPostId)
+                .IsUnique();
+            
+            // other
+            modelBuilder.Entity<Post>()
+                .Property(e => e.PostStatus)
+                .HasConversion<string>();
+            
+            modelBuilder.Entity<Post>()
+                .Property(e => e.PostApprovalStatus)
+                .HasConversion<string>();
+            
+            modelBuilder.Entity<Post>()
+                .Property(e => e.PostPayoutStatus)
+                .HasConversion<string>();
+            
+            modelBuilder.Entity<Post>()
+                .Property(e => e.ContentType)
+                .HasConversion<string>();
         
         // wallet
         modelBuilder.Entity<Wallet>()
