@@ -4,7 +4,10 @@ using System.Text.Json;
 using App.Distrbute.Api.Common.Authentication;
 using App.Distrbute.Api.Common.Middlewares;
 using App.Distrbute.Api.Common.Options;
+using App.Distrbute.Api.Common.Services.Interfaces;
+using App.Distrbute.Api.Common.Services.Providers;
 using App.Distrbute.Common;
+using Logged.Sdk.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -16,8 +19,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Utility.Sdk.Dtos;
-using Utility.Sdk.Exceptions;
 
 namespace App.Distrbute.Api.Common.Extensions;
 
@@ -190,6 +191,16 @@ public static class ServiceCollectionExtension
     public static IServiceCollection AddPriceConfig(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<PriceConfig>(c => configuration.GetRequiredSection(nameof(PriceConfig)).Bind(c));
+
+        return services;
+    }
+    
+    public static IServiceCollection AddPostTracking(this IServiceCollection services)
+    {
+        services.AddLoggedScopedService<IPostMetricService, PostMetricService>();
+        services.AddLoggedScopedService<IPostValuationService, PostValuationService>();
+        services.AddLoggedScopedService<IPostValuationWriter, PostValuationWriter>();
+        services.AddLoggedScopedService<ISocialAccountValuationService, SocialAccountValuationService>();
 
         return services;
     }

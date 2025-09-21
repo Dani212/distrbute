@@ -152,16 +152,17 @@ public class PostService : IPostService
             .IncludeWith(e => e.DistributorSocialAccount, e => e.Distributor, e => e.Email)
             .Where(e => e.DistributorSocialAccount!.Distributor.Email.Address == principal.Address)
             .Include(e => e.CampaignInvite)
+            .Where(e =>  e.CampaignInvite != null)
             .Include(e => e.DistrbuteTransaction)
             .Include(e => e.Brand));
 
         var response = new PostDto
         {
             Id = post.Id,
-            CampaignInviteId = post.CampaignInvite!.Id,
-            BrandId = post.Brand.Id,
-            BrandName = post.Brand.Name,
-            BrandBio = post.Brand.Bio,
+            CampaignInviteId = post.CampaignInvite?.Id,
+            BrandId = post.Brand?.Id,
+            BrandName = post.Brand?.Name,
+            BrandBio = post.Brand?.Bio,
             Platform = post.DistributorSocialAccount!.Platform!.Value,
             PostStatus = post.PostStatus,
             PostApprovalStatus = post.PostApprovalStatus,
@@ -172,7 +173,7 @@ public class PostService : IPostService
             EngagementRate = post.PostValuation?.EngagementRate ?? 0,
             Comments = post.PostValuation?.CommentCount ?? 0,
             Embedding = post.Embedding,
-            Payout = post.CampaignInvite.Bid,
+            Payout = post.CampaignInvite?.Bid ?? 0,
             PaidOut = post.DistrbuteTransaction?.AmountAfterCharges ?? 0,
             CreatedAt = post.CreatedAt!.Value
         };
@@ -186,6 +187,7 @@ public class PostService : IPostService
             .IncludeWith(e => e.DistributorSocialAccount, e => e.Distributor, e => e.Email)
             .Where(e => e.DistributorSocialAccount!.Distributor.Email.Address == principal.Address)
             .Include(e => e.CampaignInvite)
+            .Where(e =>  e.CampaignInvite != null)
             .Include(e => e.Brand)
             .Include(e => e.DistrbuteTransaction)
             .Where(e => (page.InviteId == null || e.CampaignInvite!.Id == page.InviteId) &&
@@ -203,10 +205,10 @@ public class PostService : IPostService
             bas => bas + query, selector: post => new PostDto
             {
                 Id = post.Id,
-                CampaignInviteId = post.CampaignInvite!.Id,
-                BrandId = post.Brand.Id,
-                BrandName = post.Brand.Name,
-                BrandBio = post.Brand.Bio,
+                CampaignInviteId = post.CampaignInvite?.Id,
+                BrandId = post.Brand?.Id,
+                BrandName = post.Brand?.Name,
+                BrandBio = post.Brand?.Bio,
                 Platform = post.DistributorSocialAccount!.Platform!.Value,
                 PostStatus = post.PostStatus,
                 PostApprovalStatus = post.PostApprovalStatus,
@@ -217,7 +219,7 @@ public class PostService : IPostService
                 EngagementRate = post.PostValuation?.EngagementRate ?? 0,
                 Comments = post.PostValuation?.CommentCount ?? 0,
                 Embedding = post.Embedding,
-                Payout = post.CampaignInvite.Bid,
+                Payout = post.CampaignInvite?.Bid ?? 0,
                 PaidOut = post.DistrbuteTransaction?.AmountAfterCharges ?? 0,
                 CreatedAt = post.CreatedAt!.Value
             });
@@ -231,6 +233,7 @@ public class PostService : IPostService
             .IncludeWith(e => e.DistributorSocialAccount, e => e.Distributor, e => e.Email)
             .Where(e => e.DistributorSocialAccount!.Distributor.Email.Address == principal.Address)
             .IncludeWith(e => e.CampaignInvite, e => e.Campaign)
+            .Where(e => e.CampaignInvite != null)
             .Include(e => e.DistrbuteTransaction),
             groupBy: p => 1,
             selector: g => new CampaignSummary
@@ -292,7 +295,7 @@ public class PostService : IPostService
                 .Where(e => e.PostValuation != null)
                 .Where(e => (queryRequest.Timeframe == null || e.PostedAt >= startDate) &&
                              (queryRequest.Platform == null || queryRequest.Platform == e.DistributorSocialAccount!.Platform))
-                .IncludeWith(e => e, e => e.DistrbuteTransaction),
+                .Include(e => e.DistrbuteTransaction),
             groupBy: e => e.PostedAt!.Value.Date,
             selector: g => new PostTimeseriesSlot
             {
@@ -348,7 +351,7 @@ public class PostService : IPostService
         {
             var templateData = new Dictionary<string, string>();
             templateData.Add("postId", existingPost.Id);
-            templateData.Add("brandName", existingPost.Brand.Name);
+            templateData.Add("brandName", existingPost.Brand!.Name);
             var reviewWindow = existingPost.ContentType!.Value.GetReviewWindow();
             templateData.Add("window", reviewWindow);
             templateData.Add("year", DateTime.UtcNow.Year.ToString());

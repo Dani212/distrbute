@@ -64,11 +64,12 @@ public class SocialAccountService : ISocialAccountService
             SetSocialAccountDetails(existingAccount, profile);
             
             var postsLastUpdated = existingAccount.PostsLastSynced;
-            if (postsLastUpdated < now.AddHours(-TWENTY_FOUR_HOURS))  // 24 hours passed
+            var twentyFoursPassedSinceLastUpdate = postsLastUpdated < now.AddHours(-TWENTY_FOUR_HOURS);
+            if (twentyFoursPassedSinceLastUpdate)
             {
                 // this involves loading the posts + valuation
                 // happens in background
-                await _pipelineProvider.ExecuteInitSocialAccountValuePipeline(existingAccount.Id);
+                await _pipelineProvider.ExecuteInitSocialAccountValuePipeline(existingAccount);
             }
             
             existingAccount.ProfileLastSynced = now;
@@ -86,9 +87,9 @@ public class SocialAccountService : ISocialAccountService
         var newAccount = new DistributorSocialAccount();
         newAccount.Id = Guid.NewGuid().ToString();
         newAccount.Distributor = existingDistributor;
+        newAccount.PostsLastSynced = DateTime.MinValue;
         SetSocialAccountDetails(newAccount, profile);
-            
-        newAccount.PostsLastSynced = now;
+        
         newAccount.ProfileLastSynced = now;
         
         var added = await _dbRepository
@@ -100,7 +101,7 @@ public class SocialAccountService : ISocialAccountService
             // start first ever tracking of posts
             // this involves loading the posts + valuation
             // happens in background
-            await _pipelineProvider.ExecuteInitSocialAccountValuePipeline(newAccount.Id);
+            await _pipelineProvider.ExecuteInitSocialAccountValuePipeline(newAccount);
         }
 
         return added?.Id;
@@ -126,14 +127,16 @@ public class SocialAccountService : ISocialAccountService
             .IncludeWith(e => e.Distributor, d => d.Email)
             .Where(e => principal.Address == e.Distributor.Email.Address && e.Id.Equals(id)));
 
+        var socialProfile = existingAccount.AsSocialProfile();
+        
         var now = DateTime.UtcNow;
         var profileLastSynced = existingAccount.ProfileLastSynced;
-        if (profileLastSynced < now.AddHours(-TWENTY_FOUR_HOURS)) // 24 hours passed
+        var twentyFoursPassedSinceLastProfileUpdate = profileLastSynced < now.AddHours(-TWENTY_FOUR_HOURS);
+        if (twentyFoursPassedSinceLastProfileUpdate)
         {
             try
             {
                 var platform = existingAccount.Platform!.Value;
-                var socialProfile = existingAccount.AsSocialProfile();
                 var updatedSocialProfile = platform switch
                 {
                     Platform.Instagram  => await _instagramSdk.GetUser(socialProfile),
@@ -157,11 +160,12 @@ public class SocialAccountService : ISocialAccountService
         }
         
         var postsLastUpdated = existingAccount.PostsLastSynced;
-        if (postsLastUpdated < now.AddHours(-TWENTY_FOUR_HOURS))  // 24 hours passed
+        var twentyFoursPassedSinceLastPostsUpdate = postsLastUpdated < now.AddHours(-TWENTY_FOUR_HOURS);
+        if (twentyFoursPassedSinceLastPostsUpdate)
         {
             // this involves loading the posts + valuation
             // happens in background
-            await _pipelineProvider.ExecuteInitSocialAccountValuePipeline(existingAccount.Id);
+            await _pipelineProvider.ExecuteInitSocialAccountValuePipeline(existingAccount);
         }
         
         
@@ -266,12 +270,14 @@ public class SocialAccountService : ISocialAccountService
         account.FollowersCount = profile.FollowersCount;
         account.FollowingCount = profile.FollowingCount;
         
-        // these are already encrypted by socials.sdk and never stored in plain text
-        account.AccessToken = profile.AccessToken;
-        account.RefreshToken = profile.RefreshToken;
+        var alreadyEncryptedAccessToken = profile.AccessToken;
+        var alreadyEncryptedRefreshToken = profile.RefreshToken;
+        account.AccessToken = alreadyEncryptedAccessToken;
+        account.RefreshToken = alreadyEncryptedRefreshToken;
             
         account.AccessTokenExpiry = profile.AccessTokenExpiry;
         account.RefreshTokenExpiry = profile.RefreshTokenExpiry;
+        account.OAuthTokenKind = profile.OAuthTokenKind;
     }
 
     private IDictionary<CampaignType, IDictionary<ContentType, double>> GetPayouts(DistributorSocialAccount socialAccount)

@@ -146,20 +146,6 @@ public class Estimate
     }
 }
 
-public static class CampaignEstimateReqExtensions
-{
-    public static ContentType GetContentType(this CampaignEstimateReq campaign)
-    {
-        return campaign.Type switch
-        {
-            CampaignType.Broadcast => campaign.Attachment!.ContentType!.Value,
-            CampaignType.UGC => campaign.RulesOfEngagement!.ContentType!.Value,
-
-            _ => throw new ArgumentOutOfRangeException(nameof(campaign.Type), campaign.Type, null)
-        };
-    }
-}
-
 public class EstimateInternal : Estimate
 {
     public double Ask { get; set; }
