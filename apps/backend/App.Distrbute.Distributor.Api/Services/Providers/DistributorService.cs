@@ -131,7 +131,6 @@ public class DistributorService : IDistributorService
         {
             var attachment = await GetAttachment(principal, update.ProfilePicture!.Id);
             update.ProfilePicture = attachment;
-            await ExecuteMediaProcessingPipeline(principal, attachment);
         }
 
         var updated = await _dbRepository.UpdateAsync(update);
@@ -139,9 +138,9 @@ public class DistributorService : IDistributorService
         var response = updated.Adapt(new DistributorDto());
         response.Email = updated.Email.Address;
         
-        if (update.ProfilePicture != null)
+        if (profilePictureChanged && updated.ProfilePicture != null)
         {
-            await ExecuteMediaProcessingPipeline(principal, update.ProfilePicture);
+            await ExecuteMediaProcessingPipeline(principal, updated.ProfilePicture);
         }
 
         return response.ToOkApiResponse();

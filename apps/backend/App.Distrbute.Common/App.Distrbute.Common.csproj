@@ -8,7 +8,7 @@
 
     <ItemGroup>
       <PackageReference Include="Paystack.Sdk" Version="1.0.34" />
-      <PackageReference Include="ObjectStorage.Sdk" Version="1.0.38" />
+      <PackageReference Include="ObjectStorage.Sdk" Version="1.0.55" />
       <PackageReference Include="Pipeline.Sdk" Version="1.0.34" />
       <PackageReference Include="Socials.Sdk" Version="1.0.53" />
     </ItemGroup>
