@@ -64,3 +64,17 @@ services:
     networks:
       - distrbute-network
     restart: unless-stopped
+    
+  clamav:
+    image: clamav/clamav:stable  
+    container_name: ${CLAMAV_CONTAINER_NAME}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CLAMAV_PORT}:3310" 
+    volumes:
+      - distrbute-filesystem:/var/lib/clamav 
+    healthcheck:
+      test: [ "CMD", "clamdscan", "--version" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
