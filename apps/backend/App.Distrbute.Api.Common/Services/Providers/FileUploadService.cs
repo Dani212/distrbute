@@ -39,10 +39,6 @@ public class FileUploadService : IFileUploadService
         req.PathPrefix = Distrbute.Common.CommonConstants.PROFILE_PICTURE_STORAGE_PREFIX;
         var presignedUploadUrlResp = await _objectStorageSdk.GeneratePresignedUploadUrlAsync<DocumentFile>(req, metadata);
         
-        var uploadUrl = presignedUploadUrlResp.UploadUrl!;
-        var encyptedUploadUrl = EncryptUploadUrlWithSymmetricKey(uploadUrl);
-        presignedUploadUrlResp.UploadUrl = encyptedUploadUrl;
-        
         return presignedUploadUrlResp;
     }
 
@@ -79,10 +75,6 @@ public class FileUploadService : IFileUploadService
         
         var presignedUploadUrlResp =
             await _objectStorageSdk.GeneratePresignedUploadUrlAsync<ContentDocumentFile>(req, metadata, additionalMetadata);
-
-        var uploadUrl = presignedUploadUrlResp.UploadUrl!;
-        var encyptedUploadUrl = EncryptUploadUrlWithSymmetricKey(uploadUrl);
-        presignedUploadUrlResp.UploadUrl = encyptedUploadUrl;
         
         return presignedUploadUrlResp;
     }
