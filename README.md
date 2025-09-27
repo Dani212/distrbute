@@ -12,11 +12,11 @@ distrbute/
 │   │   ├── distributor/    # Next.js app for distributor portal (Port 3002)
 │   │   └── marketing/      # Next.js app for marketing site (Port 3000)
 │   └── backend/
-│       ├── brandapi/       # .NET Web API for brand services (Port 5001)
-│       └── distributorapi/ # .NET Web API for distributor services (Port 5002)
+│       ├── App.Distrbute.Common/        # Shared .NET models and database context
+│       ├── App.Distrbute.Api.Common/    # Common API utilities and base controllers
+│       └── App.Distrbute.Distributor.Api/ # .NET Web API for distributor services (Port 4011)
 └── libs/
-    ├── ui/                 # Shared UI components and utilities
-    └── shared-models/      # Shared data models and contracts
+    └── next-shared/        # Shared UI components and utilities (@distrbute/next-shared)
 ```
 
 ## 🚀 Quick Start
@@ -66,12 +66,8 @@ npm run dev:marketing    # http://localhost:3000
 #### Backend APIs
 
 ```bash
-# Brand API
-cd apps/backend/brandapi
-dotnet run
-
-# Distributor API (in a new terminal)
-cd apps/backend/distributorapi
+# Distributor API
+cd apps/backend/App.Distrbute.Distributor.Api
 dotnet run
 ```
 
@@ -95,21 +91,16 @@ dotnet run
 - **Features**: Product catalog, order management, brand discovery
 - **Tech Stack**: Next.js 15.5.3, TypeScript 5.7.2, Tailwind CSS 4.1.11, ShadCN UI
 
-### Brand API (Port 5001)
-
-- **Purpose**: Backend services for brand operations
-- **Endpoints**: Products, Orders, Brands management
-- **Tech Stack**: .NET 8, Entity Framework Core, Swagger
-
-### Distributor API (Port 5002)
+### Distributor API (Port 4011)
 
 - **Purpose**: Backend services for distributor operations
-- **Endpoints**: Catalog, Orders, Distributor management
+- **Endpoints**: Authentication, Distributor management, Social accounts, Wallet, Ads, Static data
 - **Tech Stack**: .NET 8, Entity Framework Core, Swagger
+- **Features**: JWT authentication, wallet management, social media integration
 
 ## 📚 Shared Libraries
 
-### @distrbute/ui
+### @distrbute/next-shared
 
 Shared UI component library containing:
 
@@ -117,14 +108,7 @@ Shared UI component library containing:
 - **Hooks**: useLocalStorage, useDebounce
 - **Utils**: Formatting, validation, utility functions
 - **Constants**: API endpoints, routes, validation rules
-
-### @distrbute/shared-models
-
-Shared data models and contracts:
-
-- **TypeScript**: User, Product, Order, Brand, Distributor models
-- **Enums**: UserRole, ProductCategory, OrderStatus, BusinessType
-- **API Models**: ApiResponse, PaginatedResponse, ValidationResult
+- **Types**: TypeScript interfaces and types for the application
 
 ## 🛠️ Development
 
@@ -132,43 +116,49 @@ Shared data models and contracts:
 
 ```bash
 # Development
-npm run dev                 # Start all frontend apps
-npm run dev:brand          # Start brand app only
-npm run dev:distributor    # Start distributor app only
-npm run dev:marketing      # Start marketing app only
+npm run dev                 # Start all frontend apps in parallel
+npm run dev:brand          # Start brand app only (Port 3001)
+npm run dev:distributor    # Start distributor app only (Port 3002)
+npm run dev:marketing      # Start marketing app only (Port 3000)
 
 # Building
-npm run build              # Build all projects
-npm run build:ui           # Build UI library only
+npm run build              # Build all projects (shared libs first, then apps)
+npm run build:ui           # Build shared UI library only
 npm run build:shared-models # Build shared models only
+npm run build:brand        # Build brand app only
+npm run build:distributor  # Build distributor app only
+npm run build:marketing    # Build marketing app only
 
 # Linting
-npm run lint               # Lint all projects
+npm run lint               # Lint all frontend projects
+npm run lint:brand         # Lint brand app only
+npm run lint:distributor   # Lint distributor app only
+npm run lint:marketing     # Lint marketing app only
 
 # Cleaning
 npm run clean              # Clean all build artifacts
+npm run clean:brand        # Clean brand app only
+npm run clean:distributor  # Clean distributor app only
+npm run clean:marketing    # Clean marketing app only
+npm run clean:shared-models # Clean shared library only
 ```
 
 ### Backend Development
 
 ```bash
-# Brand API
-cd apps/backend/brandapi
-dotnet run                 # Start the API
-dotnet watch run          # Start with hot reload
-
 # Distributor API
-cd apps/backend/distributorapi
-dotnet run                 # Start the API
+cd apps/backend/App.Distrbute.Distributor.Api
+dotnet run                 # Start the API (Port 4011)
 dotnet watch run          # Start with hot reload
 ```
 
 ### Database
 
-Both APIs use in-memory databases for development with seeded data:
+The API uses Entity Framework Core with SQL Server:
 
-- **Brand API**: Products, Orders, Brands
-- **Distributor API**: Orders, Distributors
+- **Models**: Brand, Distributor, Campaign, Post, Wallet, Transaction, and more
+- **Features**: Migrations, relationships, data validation
+- **Context**: ApplicationDbContext with comprehensive entity configuration
 
 ## 🔧 Configuration
 
@@ -192,33 +182,50 @@ NEXT_PUBLIC_DISTRIBUTOR_API_URL=http://localhost:5002
 
 ### API Configuration
 
-The APIs are configured to run on:
+The API is configured to run on:
 
-- **Brand API**: `https://localhost:5001` (HTTP: `http://localhost:5001`)
-- **Distributor API**: `https://localhost:5002` (HTTP: `http://localhost:5002`)
+- **Distributor API**: `http://localhost:4011`
+- **Swagger Documentation**: `http://localhost:4011/swagger`
 
 ## 📖 API Documentation
 
-### Brand API Endpoints
-
-- `GET /api/products` - Get all products
-- `GET /api/products/{id}` - Get product by ID
-- `POST /api/products` - Create new product
-- `PUT /api/products/{id}` - Update product
-- `DELETE /api/products/{id}` - Delete product
-- `GET /api/orders` - Get all orders
-- `GET /api/orders/{id}` - Get order by ID
-- `POST /api/orders` - Create new order
-
 ### Distributor API Endpoints
 
-- `GET /api/catalog` - Get product catalog
-- `GET /api/catalog/{productId}` - Get product details
-- `GET /api/catalog/search?q={query}` - Search products
-- `GET /api/catalog/category/{category}` - Get products by category
-- `GET /api/orders` - Get all orders
-- `GET /api/orders/{id}` - Get order by ID
-- `POST /api/orders` - Create new order
+#### Authentication
+
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/refresh` - Refresh JWT token
+
+#### Distributor Management
+
+- `GET /api/distributor` - Get distributor profile
+- `PUT /api/distributor` - Update distributor profile
+- `GET /api/distributor/niches` - Get distributor niches
+
+#### Social Accounts
+
+- `GET /api/socials` - Get social media accounts
+- `POST /api/socials` - Add social media account
+- `PUT /api/socials/{id}` - Update social account
+- `DELETE /api/socials/{id}` - Remove social account
+
+#### Wallet & Transactions
+
+- `GET /api/wallet` - Get wallet information
+- `GET /api/wallet/transactions` - Get transaction history
+- `POST /api/wallet/transactions` - Create new transaction
+
+#### Static Data
+
+- `GET /api/static/niches` - Get available niches
+- `GET /api/static/locations` - Get location data
+
+#### Webhooks
+
+- `POST /api/webhooks` - Handle webhook events
+
+Visit `http://localhost:4011/swagger` for complete API documentation.
 
 ## 🧪 Testing
 
@@ -228,7 +235,7 @@ cd apps/frontend/brand
 npm test
 
 # Backend testing
-cd apps/backend/brandapi
+cd apps/backend/App.Distrbute.Distributor.Api
 dotnet test
 ```
 
@@ -255,7 +262,7 @@ Each .NET API can be deployed independently:
 dotnet publish -c Release -o ./publish
 
 # Run published app
-dotnet ./publish/BrandApi.dll
+dotnet ./publish/App.Distrbute.Distributor.Api.dll
 ```
 
 ## 🤝 Contributing

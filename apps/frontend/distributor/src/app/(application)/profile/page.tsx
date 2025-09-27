@@ -21,10 +21,59 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/lib/constants/routes";
+import { UserApi } from "@/lib/api/user";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@distrbute/next-shared";
+
+interface UserDetails {
+  name: string;
+  email: string;
+  image: string;
+}
 
 export default function ProfilePage() {
-  const { user, isLoading } = useAuth();
+  const { user, update } = useAuth();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchUserDetails = async () => {
+    console.log(user?.accessToken, "user?.accessToken3");
+    UserApi.getUser(user?.accessToken)
+      .then(async (response) => {
+        console.log(response, "response2");
+        await update({
+          name: response.data.name,
+          image: response.data.profilePicture?.url,
+          email: response.data.email,
+          profilePicture: response.data?.profilePicture,
+        });
+
+        return response;
+      })
+      .then((response) => {
+        console.log(response, "response3");
+        setUserDetails({
+          name: response.data.name,
+          email: response.data.email,
+          image: response.data.profilePicture?.url,
+        });
+      })
+      .catch((error) => {
+        console.log(error, "error3");
+        setError(extractErrorMessage(error));
+        toast.error(extractErrorMessage(error));
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchUserDetails();
+  }, []);
 
   const handleBack = () => {
     router.back();
@@ -40,6 +89,16 @@ export default function ProfilePage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!!error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="mt-2 text-gray-600">{error}</p>
         </div>
       </div>
     );
@@ -80,12 +139,12 @@ export default function ProfilePage() {
                   <div className="relative">
                     <Avatar className="h-32 w-32 ring-4 ring-white shadow-2xl">
                       <AvatarImage
-                        src={user?.image || ""}
-                        alt={user?.name || "Profile"}
+                        src={userDetails?.image || ""}
+                        alt={userDetails?.name || "Profile"}
                         className="object-cover"
                       />
                       <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
-                        {(user?.name || "U").charAt(0).toUpperCase()}
+                        {(userDetails?.name || "U").charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-2 shadow-lg">
@@ -95,10 +154,10 @@ export default function ProfilePage() {
 
                   <div className="text-center">
                     <h3 className="text-2xl font-bold text-slate-800 mb-1">
-                      {user?.name || "User"}
+                      {userDetails?.name || "User"}
                     </h3>
                     <p className="text-slate-600 mb-4">
-                      {user?.email || "user@example.com"}
+                      {userDetails?.email || "user@example.com"}
                     </p>
 
                     <Button
@@ -139,7 +198,7 @@ export default function ProfilePage() {
                           Full Name
                         </p>
                         <p className="text-lg font-semibold text-slate-800">
-                          {user?.name || "Not provided"}
+                          {userDetails?.name || "Not provided"}
                         </p>
                       </div>
                     </div>
@@ -153,7 +212,7 @@ export default function ProfilePage() {
                           Email Address
                         </p>
                         <p className="text-lg font-semibold text-slate-800">
-                          {user?.email || "Not provided"}
+                          {userDetails?.email || "Not provided"}
                         </p>
                       </div>
                     </div>
