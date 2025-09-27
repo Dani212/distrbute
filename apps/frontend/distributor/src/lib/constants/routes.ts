@@ -10,7 +10,9 @@ export const ROUTES = {
   AUTH: {
     LOGIN: "/auth",
     OTP: "/otp",
+    ONBOARDING: "/onboarding",
   },
+
 
   // Dashboard routes (for future use)
   DASHBOARD: {

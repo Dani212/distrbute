@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -33,12 +33,10 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/lib/constants/routes";
-import {
-  generatePresignedUrlProfilePicture,
-  uploadProfilePicture,
-} from "@/lib/api/user";
+import { UserApi } from "@/lib/api/user";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@distrbute/next-shared";
+import { ProfilePicture } from "@/types/user";
 
 interface ProfileFormData {
   name: string;
@@ -46,15 +44,21 @@ interface ProfileFormData {
 }
 
 export default function EditProfilePage() {
-  const { user, update } = useAuth();
+  const { user, isLoading: isLoadingAuth, update } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(
     user?.image || null
   );
+  const [profilePicture, setProfilePicture] = useState<ProfilePicture | null>(
+    user?.profilePicture || null
+  );
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Track original values to detect changes
+  const originalName = user?.name || "";
+  const originalImage = user?.image || null;
 
   const form = useForm<ProfileFormData>({
     defaultValues: {
@@ -63,16 +67,31 @@ export default function EditProfilePage() {
     },
   });
 
+  useEffect(() => {
+    setProfileImage(user?.image || null);
+    setProfilePicture(user?.profilePicture || null);
+    form.setValue("name", user?.name || "");
+    form.setValue("email", user?.email || "");
+  }, [user]);
+
+  // Check if any changes have been made
+  const hasChanges = () => {
+    const currentName = form.watch("name");
+    const nameChanged = currentName !== originalName;
+    const imageChanged = profileImage !== originalImage;
+    return nameChanged || imageChanged;
+  };
+
   const handleImageChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      setUploadError(null);
 
       try {
         setIsLoading(true);
+        setUploadError(null);
 
         // First, show preview
         const reader = new FileReader();
@@ -82,59 +101,11 @@ export default function EditProfilePage() {
         };
         reader.readAsDataURL(file);
 
-        // Prepare FormData for presigned URL request
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("fileName", file.name);
-        formData.append("fileType", file.type);
-        formData.append("size", file.size.toString());
-
-        // Generate presigned URL
-        const presignedResponse = await generatePresignedUrlProfilePicture(
-          formData
-        );
-
-        if (presignedResponse.data) {
-          const { uploadUrl, filename, id } = presignedResponse.data;
-
-          // Upload file to presigned URL
-          const uploadResponse = await uploadProfilePicture({
-            ownerId: user?.id || "unknown",
-            file: file,
-            fileName: filename,
-            url: uploadUrl,
-            isPublic: true,
-            createdAt: new Date().toISOString(),
-          });
-
-          if (uploadResponse.ok) {
-            // Update profile image with the uploaded URL
-            setProfileImage(presignedResponse.data.uploadUrl);
-            toast.success("Profile picture uploaded successfully!");
-            console.log("Profile picture uploaded successfully");
-          } else {
-            console.error("Failed to upload profile picture");
-            const errorMsg =
-              "Failed to upload profile picture. Please try again.";
-            setUploadError(errorMsg);
-            toast.error(errorMsg);
-            // Keep the preview - don't reset profileImage
-          }
-        } else {
-          console.error("Failed to generate presigned URL");
-          const errorMsg = "Failed to generate upload URL. Please try again.";
-          setUploadError(errorMsg);
-          toast.error(errorMsg);
-          // Keep the preview - don't reset profileImage
-        }
+        uploadProfilePicture(file);
       } catch (error) {
-        console.log("Error uploading profile picture:");
-        const errorMsg = extractErrorMessage(error);
-        setUploadError(errorMsg);
-        toast.error(errorMsg);
-        // Keep the preview - don't reset profileImage
-      } finally {
-        setIsLoading(false);
+        console.error("Error uploading profile picture:", error);
+        setUploadError(extractErrorMessage(error));
+        toast.error(extractErrorMessage(error));
       }
     }
   };
@@ -145,29 +116,36 @@ export default function EditProfilePage() {
       return;
     }
 
+    uploadProfilePicture(selectedFile);
+  };
+
+  const uploadProfilePicture = async (file: File) => {
     try {
       setIsLoading(true);
       setUploadError(null);
 
       // Prepare FormData for presigned URL request
       const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("fileName", selectedFile.name);
-      formData.append("fileType", selectedFile.type);
-      formData.append("size", selectedFile.size.toString());
+      formData.append("file", file);
+      formData.append("fileName", file.name);
+      formData.append("fileType", file.type);
+      formData.append("size", file.size.toString());
 
       // Generate presigned URL
-      const presignedResponse = await generatePresignedUrlProfilePicture(
-        formData
-      );
+      const presignedResponse =
+        await UserApi.generatePresignedUrlProfilePicture(formData);
 
       if (presignedResponse.data) {
         const { uploadUrl, filename, id } = presignedResponse.data;
 
+        console.log(uploadUrl, "uploadUrl");
+        console.log(filename, "filename");
+        console.log(id, "id");
+
         // Upload file to presigned URL
-        const uploadResponse = await uploadProfilePicture({
-          ownerId: user?.id || "unknown",
-          file: selectedFile,
+        const uploadResponse = await UserApi.uploadProfilePicture({
+          ownerId: user?.email || "unknown",
+          file: file,
           fileName: filename,
           url: uploadUrl,
           isPublic: true,
@@ -176,28 +154,40 @@ export default function EditProfilePage() {
 
         if (uploadResponse.ok) {
           // Update profile image with the uploaded URL
-          setProfileImage(presignedResponse.data.url);
+          setProfileImage(presignedResponse.data.uploadUrl);
+          setProfilePicture({
+            id: id,
+            fileType: file.type,
+            filename: filename,
+            rawUrl: presignedResponse.data.url,
+            size: file.size,
+            sizeReadable: file.size.toString(),
+            url: presignedResponse.data.url,
+            thumbnail: presignedResponse.data.url,
+          });
           toast.success("Profile picture uploaded successfully!");
           console.log("Profile picture uploaded successfully");
-          setSelectedFile(null); // Clear selected file on success
         } else {
           console.error("Failed to upload profile picture");
           const errorMsg =
             "Failed to upload profile picture. Please try again.";
           setUploadError(errorMsg);
           toast.error(errorMsg);
+          // Keep the preview - don't reset profileImage
         }
       } else {
         console.error("Failed to generate presigned URL");
         const errorMsg = "Failed to generate upload URL. Please try again.";
         setUploadError(errorMsg);
         toast.error(errorMsg);
+        // Keep the preview - don't reset profileImage
       }
     } catch (error) {
-      console.error("Error uploading profile picture:", error);
+      console.log("Error uploading profile picture:");
       const errorMsg = extractErrorMessage(error);
       setUploadError(errorMsg);
       toast.error(errorMsg);
+      // Keep the preview - don't reset profileImage
     } finally {
       setIsLoading(false);
     }
@@ -205,28 +195,33 @@ export default function EditProfilePage() {
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
-    try {
-      // Here you would typically make an API call to update the profile
-      // For now, we'll just simulate the update
-      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Update the session with new data
-      await update({
-        ...user,
-        name: data.name,
-        image: profileImage, // This will be the uploaded image URL if a new image was selected
+    const userRequest: any = {
+      name: data.name,
+      profilePicture: profilePicture,
+    };
+
+    UserApi.updateUser(userRequest)
+      .then(async () => {
+        toast.success("Profile updated successfully!");
+        await update({
+          ...user,
+          name: data.name,
+          image: profileImage,
+          profilePicture: profilePicture,
+        });
+        toast.success("Profile updated successfully!");
+
+        // Navigate back to dashboard
+        router.push(ROUTES.DASHBOARD.PROFILE);
+      })
+      .catch((error) => {
+        console.error("Error updating profile:", error);
+        toast.error(extractErrorMessage(error));
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-
-      toast.success("Profile updated successfully!");
-
-      // Navigate back to dashboard
-      router.push(ROUTES.DASHBOARD.ROOT);
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error(extractErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleBack = () => {
@@ -237,13 +232,24 @@ export default function EditProfilePage() {
     setUploadError(null);
     setSelectedFile(null);
     // Reset profile image to original when clearing error
-    setProfileImage(user?.image || null);
+    setProfileImage(originalImage);
 
     // Reset the file input so new files can be selected
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
+
+  if (isLoadingAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -294,7 +300,7 @@ export default function EditProfilePage() {
                     }`}
                   >
                     <AvatarImage
-                      src={profileImage || "avatar.png"}
+                      src={profilePicture?.thumbnail || "avatar.png"}
                       alt={form.watch("name") || "Profile"}
                       className="object-cover"
                     />
@@ -471,8 +477,8 @@ export default function EditProfilePage() {
                       </Button>
                       <Button
                         type="submit"
-                        disabled={isLoading}
-                        className="flex-1 h-10 xl:h-12 text-sm xl:text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                        disabled={isLoading || !hasChanges()}
+                        className="flex-1 h-10 xl:h-12 text-sm xl:text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isLoading ? (
                           <>
