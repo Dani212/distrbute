@@ -33,10 +33,12 @@ export const AUTH = {
   // Credentials configuration
   CREDENTIALS: {
     EMAIL: { label: "Email", type: "email" },
-    OTP_CODE: { label: "OTP Code", type: "text" },
-    VERIFICATION_ID: { label: "Verification ID", type: "text" },
-    REQUEST_ID: { label: "Request ID", type: "text" },
-    OTP_PREFIX: { label: "OTP Prefix", type: "text" },
+    NAME: { label: "Name", type: "text" },
+    IMAGE: { label: "Image", type: "text" },
+    ACCESS_TOKEN: { label: "Access Token", type: "text" },
+    EXPIRATION_MILLIS: { label: "Expiration Millis", type: "text" },
+    ACCOUNT_CREATED: { label: "Account Created", type: "text" },
+    PROFILE_PICTURE: { label: "Profile Picture", type: "object" },
   },
 
   // Pages configuration

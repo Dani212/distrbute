@@ -5,7 +5,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { Button, extractErrorMessage } from "@distrbute/next-shared";
+import {
+  Button,
+  extractErrorMessage,
+  FetchError,
+} from "@distrbute/next-shared";
 import { AuthApi } from "@/lib/api/auth";
 import { STORAGE_KEYS, type OtpData } from "@/lib/constants/storage";
 import { ROUTES } from "@/lib/constants/routes";
@@ -30,8 +34,9 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { AUTH } from "@/lib/constants/auth";
+import { UserApi } from "@/lib/api/user";
 
 const otpSchema = z.object({
   otp: z
@@ -94,24 +99,62 @@ export default function OtpPage() {
     }
 
     setIsLoading(true);
-    // Sign in with NextAuth using OTP credentials
-    signIn(AUTH.PROVIDERS.OTP, {
+
+    AuthApi.verifyOtp({
       email: otpData.email,
       otpCode: data.otp,
       verificationId: otpData.verificationId,
       requestId: otpData.requestId,
       otpPrefix: otpData.otpPrefix,
-      redirect: false,
     })
-      .then((result) => {
-        toast.success("OTP verified successfully!");
-        // Clear the OTP data from sessionStorage
-        sessionStorage.removeItem(STORAGE_KEYS.OTP_DATA);
-        // Redirect to dashboard on successful authentication
-        router.push(ROUTES.DASHBOARD.ROOT);
+      .then(async (response) => {
+        if (response.code === AUTH.API_CODES.SUCCESS && response.data.token) {
+          // Get user data
+          const userResponse = await UserApi.getUser(response.data.token).catch(
+            (error) => {
+              if (error instanceof FetchError && error.status === 404) {
+                return {
+                  data: null,
+                };
+              }
+              throw error;
+            }
+          );
+
+          const userData = {
+            id: otpData.email,
+            email: otpData.email,
+            name: userResponse.data?.name || otpData.name || otpData.email,
+            image: userResponse.data?.profilePicture?.url || null,
+            accessToken: response.data.token,
+            expirationMillis: response.data.expirationMillis,
+            accountCreated: userResponse.data !== null,
+            profilePicture: userResponse.data?.profilePicture || null,
+          };
+
+          // Sign in with NextAuth using OTP credentials
+          signIn(AUTH.PROVIDERS.OTP, { ...userData, redirect: false }).then(
+            (result) => {
+              if (result?.error) {
+                toast.error(extractErrorMessage(result.error));
+              } else {
+                toast.success("OTP verified successfully!");
+                // Clear the OTP data from sessionStorage
+                sessionStorage.removeItem(STORAGE_KEYS.OTP_DATA);
+
+                if (userData.accountCreated) {
+                  // Redirect to dashboard on successful authentication
+                  router.push(ROUTES.DASHBOARD.ROOT);
+                } else {
+                  router.push(ROUTES.AUTH.ONBOARDING);
+                }
+              }
+            }
+          );
+        }
       })
       .catch((error) => {
-        console.error("Sign in error:", error);
+        console.error("OTP verification failed:", error);
         toast.error(extractErrorMessage(error));
       })
       .finally(() => {
